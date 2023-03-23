@@ -18,12 +18,19 @@ setTimeout(() => {
   const trayLibrary = gui.MenuItem.create('submenu')
   trayLibrary.setLabel('Library')
   new CardLibrary().findAll().forEach((library: string, index: number) => {
-    const menuItem = gui.MenuItem.create('checkbox')
+    const menuItem = gui.MenuItem.create('radio')
     menuItem.setLabel(library)
     menuItem.setChecked(index === 0)
+    menuItem.onClick = (self: gui.MenuItem) => {
+      const library = self.getLabel().split(' | ').shift()
+      if (undefined !== library) {
+        cardReader.init(library)
+      }
+    }
     trayLibItems.push(menuItem)
   })
-  trayLibrary.setSubmenu(gui.Menu.create(trayLibItems))
+  const trayLibMenu = gui.Menu.create(trayLibItems)
+  trayLibrary.setSubmenu(trayLibMenu)
   trayMenuItems.push(trayLibrary)
 
   trayMenuItems.push(gui.MenuItem.create('separator'))
@@ -36,13 +43,23 @@ setTimeout(() => {
   tray.setMenu(gui.Menu.create(trayMenuItems))
 
   const cardReader = new CardReader()
-  cardReader.init()
 
   loading.win.setVisible(false)
 
+  for (let i = 0; i < trayLibMenu.itemCount(); i++) {
+    const menuItem = trayLibMenu.itemAt(i)
+    cardReader.init(menuItem.getLabel())
+    menuItem.setLabel(cardReader.library + ' | ' + cardReader.libraryDescription)
+  }
+
+  const library = new CardLibrary().findAll().shift()
+  if (undefined !== library) {
+    cardReader.init(library)
+  }
+
   if (cardReader.library !== '') {
     if (cardReader.lastError === '') {
-      const alert = new Alert('Using library ' + cardReader.library, { frame: false })
+      const alert = new Alert('Open e-ID is up and ready !\n\nUsing library ' + cardReader.library, { frame: false })
       alert.show()
       setTimeout(() => {
         alert.win.setVisible(false)
