@@ -4,8 +4,8 @@ export class Alert {
   win: gui.Window
   message: string
 
-  constructor (message: string) {
-    this.win = gui.Window.create({})
+  constructor (message: string, options: { frame?: boolean } = {}) {
+    this.win = gui.Window.create(options)
     this.message = message
   }
 
@@ -20,6 +20,10 @@ export class Alert {
 
     this.win.onClose = () => { gui.MessageLoop.quit() }
     this.win.setContentSize({ width: 400, height: 100 })
+    this.win.setAlwaysOnTop(true)
+    this.win.setResizable(false)
+    this.win.setMaximizable(false)
+    this.win.setMinimizable(false)
     this.win.center()
     this.win.activate()
   }

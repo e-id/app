@@ -2,7 +2,7 @@ import { PKCS11 } from 'pkcs11js'
 import { CardLibrary } from './card-library'
 
 export class CardReader {
-  library: string
+  library: string = ''
   pkcs11: PKCS11
 
   init (): void {
