@@ -6,8 +6,9 @@ Open e-ID is a set of tools to provide web developers the ability to read the co
 
 The apps are based on non intrusive, secure and standard technologies such as:
 
-* PKCS11
-* NodeJS
+* NodeJS https://nodejs.org/
+* PKCS11 https://github.com/PeculiarVentures/pkcs11js
+* Yue https://github.com/yue/node-gui
 
 ## Project status
 
