@@ -13,11 +13,17 @@ cardReader.init()
 loading.win.close()
 
 if (cardReader.library !== '') {
-  const alert = new Alert('Using library ' + cardReader.library, { frame: false })
-  alert.show()
-  setTimeout(() => {
-    alert.win.setVisible(false)
-  }, 3000)
+  if (cardReader.lastError === '') {
+    const alert = new Alert('Using library ' + cardReader.library, { frame: false })
+    alert.show()
+    setTimeout(() => {
+      alert.win.setVisible(false)
+    }, 3000)
+  } else {
+    const alert = new Alert('An error occured:\n\n' + cardReader.lastError, { width: 600, height: 200 })
+    alert.win.onClose = () => { gui.MessageLoop.quit() }
+    alert.show()
+  }
 } else {
   const alert = new Alert('No library found.\nPlease install middleware and try again.')
   alert.win.onClose = () => { gui.MessageLoop.quit() }

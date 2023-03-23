@@ -1,10 +1,14 @@
 import * as gui from 'gui'
 
 export class Alert {
-  win: gui.Window
   message: string
+  options: { frame?: boolean, width?: number, height?: number } = {}
+  win: gui.Window
 
-  constructor (message: string, options: { frame?: boolean } = {}) {
+  constructor (message: string, options: { frame?: boolean, width?: number, height?: number } = {}) {
+    this.options = { ...options }
+    delete options.width
+    delete options.height
     this.win = gui.Window.create(options)
     this.message = message
   }
@@ -19,7 +23,7 @@ export class Alert {
     contentView.addChildView(label)
 
     this.win.onClose = () => { gui.MessageLoop.quit() }
-    this.win.setContentSize({ width: 400, height: 100 })
+    this.win.setContentSize({ width: this.options.width ?? 400, height: this.options.height ?? 100 })
     this.win.setAlwaysOnTop(true)
     this.win.setResizable(false)
     this.win.setMaximizable(false)
