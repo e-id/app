@@ -44,7 +44,7 @@ setTimeout(() => {
 
   const cardReader = new CardReader()
 
-  loading.win.setVisible(false)
+  loading.window.setVisible(false)
 
   for (let i = 0; i < trayLibMenu.itemCount(); i++) {
     const menuItem = trayLibMenu.itemAt(i)
@@ -62,16 +62,16 @@ setTimeout(() => {
       const alert = new Alert('Open e-ID is up and ready !\n\nUsing library ' + cardReader.library, { frame: false })
       alert.show()
       setTimeout(() => {
-        alert.win.setVisible(false)
+        alert.window.setVisible(false)
       }, 3000)
     } else {
       const alert = new Alert('An error occured:\n\n' + cardReader.lastError, { width: 600, height: 200 })
-      alert.win.onClose = () => { gui.MessageLoop.quit() }
+      alert.window.onClose = () => { gui.MessageLoop.quit() }
       alert.show()
     }
   } else {
     const alert = new Alert('No library found.\nPlease install middleware and try again.')
-    alert.win.onClose = () => { gui.MessageLoop.quit() }
+    alert.window.onClose = () => { gui.MessageLoop.quit() }
     alert.show()
   }
 }, 1000)
