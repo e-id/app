@@ -4,13 +4,13 @@ import * as path from 'path'
 import { CardLibrary } from './card-library'
 import { CardReader } from './card-reader'
 import { Alert } from './gui/alert'
+import { Image } from './gui/image'
 
 const loading = new Alert('Loading...', { frame: false })
 loading.show()
 
 setTimeout(() => {
-  const icon = gui.Image.createFromPath(path.join('.', 'assets', 'tray-w.png'))
-  const tray = gui.Tray.createWithImage(icon)
+  const tray = gui.Tray.createWithImage(new Image().createFromPath(path.join(__dirname, '../assets/tray-w.png')))
 
   const trayMenuItems: gui.MenuItem[] = []
 
