@@ -11,25 +11,28 @@ export class CardLibrary {
         case 'linux':
           return '/usr/local/lib'
         case 'win32':
-          return '/'
+          return ''
         default:
           return '/'
       }
     })()
 
-    const libraryExt = ((): string => {
+    const libraryFile = ((): string => {
       switch (os.platform()) {
         case 'darwin':
-          return '.dylib'
+          return '*pkcs11*.dylib'
         case 'linux':
-          return '.lib'
+          return '*pkcs11*.lib'
         case 'win32':
-          return '.dll'
+          return '/Program*/!(j2)pkcs11*.dll'
         default:
-          return '.*'
+          return '*pkcs11*.lib'
       }
     })()
 
-    return globSync(path.join(libraryPath, '**', '*pkcs11*' + libraryExt))
+    return globSync(libraryFile, {
+      cwd: libraryPath,
+      matchBase: true
+    }).map((library: string) => path.join(libraryPath, library))
   }
 }

@@ -9,7 +9,7 @@ export class Image {
     const tmp = path.join(os.tmpdir(), Buffer.from(imagePath).toString('base64'))
     fs.writeFileSync(tmp, fs.readFileSync(imagePath))
     const image = gui.Image.createFromPath(tmp)
-    fs.unlinkSync(tmp)
+    // fs.unlinkSync(tmp)
     return image
   }
 }

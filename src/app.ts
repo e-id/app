@@ -1,8 +1,9 @@
 import * as gui from 'gui'
+import * as os from 'os'
 import * as path from 'path'
 
-import { CardLibrary } from './card-library'
-import { CardReader } from './card-reader'
+import { CardLibrary } from './service/card-library'
+import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
 
@@ -10,7 +11,7 @@ const loading = new Alert('Loading...', { frame: false })
 loading.show()
 
 setTimeout(() => {
-  const tray = gui.Tray.createWithImage(new Image().createFromPath(path.join(__dirname, '../assets/tray-w.png')))
+  const tray = gui.Tray.createWithImage(new Image().createFromPath(path.join(__dirname, '../assets/tray' + (os.platform() === 'darwin' ? '-w' : '') + '.png')))
 
   const trayMenuItems: gui.MenuItem[] = []
 
