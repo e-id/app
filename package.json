@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Open e-ID app",
   "main": "dist/app.js",
-  "bin": "dist/app.js",  
+  "bin": "dist/app.js",
   "devDependencies": {
     "@types/node": "^18.15.5",
     "@typescript-eslint/eslint-plugin": "^5.56.0",

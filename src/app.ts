@@ -1,31 +1,45 @@
 import * as gui from 'gui'
 import * as os from 'os'
+import * as fs from 'fs'
 import * as path from 'path'
 
 import { CardLibrary } from './service/card-library'
 import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
+import { Preferences } from './util/preferences'
 
 const loading = new Alert('Loading...', { frame: false })
 loading.show()
 
+const trayIcon = new Image()
+
 setTimeout(() => {
-  const tray = gui.Tray.createWithImage(new Image().createFromPath(path.join(__dirname, '../assets/tray' + (os.platform() === 'darwin' ? '-w' : '') + '.png')))
+  const preferences = new Preferences('io.github.e-id')
+  let currentLibrary = preferences.getString('Library')
+  const libraries = new CardLibrary().findAll()
+
+  const iconPath = path.join(__dirname, '../assets/tray' + (os.platform() === 'darwin' ? '-w' : '') + '.png')
+  const tray = gui.Tray.createWithImage(trayIcon.createFromPath(iconPath))
 
   const trayMenuItems: gui.MenuItem[] = []
 
   const trayLibItems: gui.MenuItem[] = []
   const trayLibrary = gui.MenuItem.create('submenu')
   trayLibrary.setLabel('Library')
-  new CardLibrary().findAll().forEach((library: string, index: number) => {
+  libraries.forEach((library: string, index: number) => {
     const menuItem = gui.MenuItem.create('radio')
     menuItem.setLabel(library)
-    menuItem.setChecked(index === 0)
+    const checked = currentLibrary !== null ? library === currentLibrary : index === 0
+    menuItem.setChecked(checked)
     menuItem.onClick = (self: gui.MenuItem) => {
       const library = self.getLabel().split(' | ').shift()
       if (undefined !== library) {
         cardReader.init(library)
+        if (cardReader.lastError === '') {
+          preferences.setString('Library', library)
+          currentLibrary = library
+        }
       }
     }
     trayLibItems.push(menuItem)
@@ -53,9 +67,15 @@ setTimeout(() => {
     menuItem.setLabel(cardReader.library + ' | ' + cardReader.libraryDescription)
   }
 
-  const library = new CardLibrary().findAll().shift()
-  if (undefined !== library) {
-    cardReader.init(library)
+  if (currentLibrary === null) {
+    const library = libraries.shift()
+    if (undefined !== library) {
+      cardReader.init(library)
+      if (cardReader.lastError === '') {
+        preferences.setString('Library', library)
+        currentLibrary = library
+      }
+    }
   }
 
   if (cardReader.library !== '') {
@@ -78,4 +98,5 @@ setTimeout(() => {
 }, 1000)
 
 gui.MessageLoop.run()
+fs.unlinkSync(trayIcon.tmp)
 process.exit(0)
