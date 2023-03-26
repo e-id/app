@@ -13,11 +13,47 @@ const loading = new Alert('Loading...', { frame: false })
 loading.show()
 
 const trayIcon = new Image()
+const cardReader = new CardReader()
 
 setTimeout(() => {
   const preferences = new Preferences('io.github.e-id')
-  let currentLibrary = preferences.getString('Library')
+
   const libraries = new CardLibrary().findAll()
+  let currentLibrary = preferences.getString('Library')
+  if (currentLibrary !== null) {
+    cardReader.init(currentLibrary)
+    if (cardReader.lastError !== '') {
+      currentLibrary = null
+    }
+  }
+
+  if (currentLibrary === null) {
+    const library = libraries.shift()
+    if (undefined !== library && library !== null) {
+      cardReader.init(library)
+      if (cardReader.lastError === '') {
+        preferences.setString('Library', library)
+        currentLibrary = library
+      }
+    }
+  }
+
+  const slots = cardReader.getReaders()
+  let currentSlot = preferences.getString('Slot')
+
+  if (currentLibrary !== null) {
+    if (slots.filter(slot => slot.slotDescription.trim() === currentSlot).length !== 1) {
+      currentSlot = null
+    }
+  }
+
+  if (currentSlot === null) {
+    const slot = slots.shift()
+    if (undefined !== slot && slot !== null) {
+      preferences.setString('Slot', slot.slotDescription.trim())
+      currentLibrary = slot.slotDescription.trim()
+    }
+  }
 
   const iconPath = path.join(__dirname, '../assets/tray' + (os.platform() === 'darwin' ? '-w' : '') + '.png')
   const tray = gui.Tray.createWithImage(trayIcon.createFromPath(iconPath))
@@ -48,6 +84,24 @@ setTimeout(() => {
   trayLibrary.setSubmenu(trayLibMenu)
   trayMenuItems.push(trayLibrary)
 
+  const traySlotItems: gui.MenuItem[] = []
+  const traySlot = gui.MenuItem.create('submenu')
+  traySlot.setLabel('Reader')
+  slots.forEach((slot: any, index: number) => {
+    const menuItem = gui.MenuItem.create('radio')
+    menuItem.setLabel(slot.slotDescription.trim())
+    const checked = currentSlot !== null ? menuItem.getLabel() === currentSlot : index === 0
+    menuItem.setChecked(checked)
+    menuItem.onClick = (self: gui.MenuItem) => {
+      preferences.setString('Slot', self.getLabel())
+      currentSlot = self.getLabel()
+    }
+    traySlotItems.push(menuItem)
+  })
+  const traySlotMenu = gui.Menu.create(traySlotItems)
+  traySlot.setSubmenu(traySlotMenu)
+  trayMenuItems.push(traySlot)
+
   trayMenuItems.push(gui.MenuItem.create('separator'))
 
   const trayQuit = gui.MenuItem.create('label')
@@ -57,25 +111,12 @@ setTimeout(() => {
 
   tray.setMenu(gui.Menu.create(trayMenuItems))
 
-  const cardReader = new CardReader()
-
   loading.window.setVisible(false)
 
   for (let i = 0; i < trayLibMenu.itemCount(); i++) {
     const menuItem = trayLibMenu.itemAt(i)
     cardReader.init(menuItem.getLabel())
     menuItem.setLabel(cardReader.library + ' | ' + cardReader.libraryDescription)
-  }
-
-  if (currentLibrary === null) {
-    const library = libraries.shift()
-    if (undefined !== library) {
-      cardReader.init(library)
-      if (cardReader.lastError === '') {
-        preferences.setString('Library', library)
-        currentLibrary = library
-      }
-    }
   }
 
   if (cardReader.library !== '') {
@@ -99,4 +140,5 @@ setTimeout(() => {
 
 gui.MessageLoop.run()
 fs.unlinkSync(trayIcon.tmp)
+cardReader.finalize()
 process.exit(0)

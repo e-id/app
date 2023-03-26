@@ -8,13 +8,7 @@ export class CardReader {
 
   init (library: string): void {
     if (this.library !== '' && this.lastError === '') {
-      if (this.pkcs11 !== null) {
-        try {
-          this.pkcs11.C_Finalize()
-        } catch (e) {
-          this.lastError = e.message
-        }
-      }
+      this.finalize()
     }
 
     this.library = library
@@ -27,6 +21,33 @@ export class CardReader {
       this.lastError = ''
     } catch (e) {
       this.lastError = e.message
+    }
+  }
+
+  getReaders (): any[] {
+    const readers: any[] = []
+    if (this.library === '') {
+      return readers
+    }
+    const slots = this.pkcs11?.C_GetSlotList(true)
+    if (undefined !== slots) {
+      slots.forEach((slot: Buffer) => {
+        const slotInfo = this.pkcs11?.C_GetSlotInfo(slot)
+        if (undefined !== slotInfo) {
+          readers.push(slotInfo)
+        }
+      })
+    }
+    return readers
+  }
+
+  finalize (): void {
+    if (this.pkcs11 !== null) {
+      try {
+        this.pkcs11.C_Finalize()
+      } catch (e) {
+        this.lastError = e.message
+      }
     }
   }
 }
