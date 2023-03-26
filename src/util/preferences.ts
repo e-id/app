@@ -9,10 +9,8 @@ export class Preferences {
   lastError: string
 
   constructor (nameSpace: string) {
-    if (os.platform() === 'darwin') {
-      this.nameSpace = nameSpace
-      this.lastError = ''
-    }
+    this.nameSpace = nameSpace
+    this.lastError = ''
   }
 
   getString (key: string): string | null {
