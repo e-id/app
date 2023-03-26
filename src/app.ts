@@ -38,7 +38,7 @@ setTimeout(() => {
     }
   }
 
-  const slots = cardReader.getReaders()
+  const slots = cardReader.getSlots()
   let currentSlot = preferences.getString('Slot')
 
   if (currentLibrary !== null) {
@@ -126,6 +126,10 @@ setTimeout(() => {
       setTimeout(() => {
         alert.window.setVisible(false)
       }, 3000)
+      const slot = slots.filter(slot => slot.slotDescription.trim() === currentSlot).shift()
+      if (slot !== null) {
+        console.log(cardReader.readCard(slot.buffer))
+      }
     } else {
       const alert = new Alert('An error occured:\n\n' + cardReader.lastError, { width: 600, height: 200 })
       alert.window.onClose = () => { gui.MessageLoop.quit() }
