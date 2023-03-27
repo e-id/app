@@ -1,5 +1,6 @@
-import * as gui from 'gui'
+import * as os from 'os'
 import * as fs from 'fs'
+import * as gui from 'gui'
 import * as path from 'path'
 
 import { Helper } from './util/helper'
@@ -8,17 +9,21 @@ import { CardLibrary } from './service/card-library'
 import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
+import { exec } from 'child_process'
 
 export class App {
+  cardReader = new CardReader()
+  uri = ''
+  currentSlot: string | null = null
+
   start (): void {
     if (process.platform === 'darwin') {
       gui.app.setActivationPolicy('accessory')
     }
 
     const preferences = new Preferences('io.github.e-id')
-    const cardReader = new CardReader()
     const cardLibrary = new CardLibrary()
-    const helper = new Helper(preferences, cardLibrary, cardReader)
+    const helper = new Helper(preferences, cardLibrary, this.cardReader)
     const trayIcon = new Image()
 
     let currentLibrary = helper.getLibrary()
@@ -27,32 +32,34 @@ export class App {
       console.log(`Using library ${currentLibrary}`)
     }
 
-    let currentSlot = helper.getSlot()
-    if (currentSlot !== null) {
-      preferences.setString('Slot', currentSlot)
-      console.log(`Using slot ${currentSlot}`)
+    this.currentSlot = helper.getSlot()
+    if (this.currentSlot !== null) {
+      preferences.setString('Slot', this.currentSlot)
+      console.log(`Using slot ${this.currentSlot}`)
     }
 
     const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-w' : '') + '.png')
     const tray = gui.Tray.createWithImage(trayIcon.createFromPath(iconPath))
 
     const uri = process.argv.pop()
-    if (undefined !== uri && uri.startsWith('e-id:') && currentLibrary !== null) {
-      const slot = currentSlot !== null ? helper.getSlotByDescription(currentSlot) : null
+
+    if (undefined !== uri && (uri.startsWith('e-id://') || uri.startsWith('open-eid://')) && currentLibrary !== null) {
+      this.uri = uri
+      const slot = this.currentSlot !== null ? helper.getSlotByDescription(this.currentSlot) : null
       if (slot === null) {
         const wait = new Alert('Please connect reader and insert card')
         wait.show()
         const interval = setInterval(() => {
-          const slot = cardReader.getSlots().shift()
+          const slot = this.cardReader.getSlots().shift()
           if (slot !== undefined && slot !== null) {
             clearInterval(interval)
             wait.window.setVisible(false)
-            currentSlot = slot.slotDescription.trim()
-            if (currentSlot !== null) {
-              preferences.setString('Slot', currentSlot)
-              console.log(`Using Slot ${currentSlot}`)
+            this.currentSlot = slot.slotDescription.trim()
+            if (this.currentSlot !== null) {
+              preferences.setString('Slot', this.currentSlot)
+              console.log(`Using Slot ${this.currentSlot}`)
             }
-            console.log(cardReader.readCard(slot.buffer))
+            this.read(slot.buffer)
             process.exit(0)
           }
         }, 1000)
@@ -60,7 +67,7 @@ export class App {
           clearInterval(interval)
         }
       } else {
-        console.log(cardReader.readCard(slot.buffer))
+        this.read(slot.buffer)
         process.exit(0)
       }
     } else {
@@ -81,8 +88,8 @@ export class App {
           menuItem.onClick = (self: gui.MenuItem) => {
             const library = self.getLabel().split(' | ').shift()
             if (undefined !== library) {
-              cardReader.init(library)
-              if (cardReader.lastError === '') {
+              this.cardReader.init(library)
+              if (this.cardReader.lastError === '') {
                 preferences.setString('Library', library)
                 currentLibrary = library
                 console.log(`Using library ${currentLibrary}`)
@@ -98,15 +105,15 @@ export class App {
         const traySlotItems: gui.MenuItem[] = []
         const traySlot = gui.MenuItem.create('submenu')
         traySlot.setLabel('Reader')
-        cardReader.getSlots().forEach((slot: any, index: number) => {
+        this.cardReader.getSlots().forEach((slot: any, index: number) => {
           const menuItem = gui.MenuItem.create('radio')
           menuItem.setLabel(slot.slotDescription.trim())
-          const checked = currentSlot !== null ? menuItem.getLabel() === currentSlot : index === 0
+          const checked = this.currentSlot !== null ? menuItem.getLabel() === this.currentSlot : index === 0
           menuItem.setChecked(checked)
           menuItem.onClick = (self: gui.MenuItem) => {
             preferences.setString('Slot', self.getLabel())
-            currentSlot = self.getLabel()
-            console.log(`Using slot ${currentSlot}`)
+            this.currentSlot = self.getLabel()
+            console.log(`Using slot ${this.currentSlot}`)
           }
           traySlotItems.push(menuItem)
         })
@@ -127,19 +134,19 @@ export class App {
 
         for (let i = 0; i < trayLibMenu.itemCount(); i++) {
           const menuItem = trayLibMenu.itemAt(i)
-          cardReader.init(menuItem.getLabel())
-          menuItem.setLabel(cardReader.library + ' | ' + cardReader.libraryDescription)
+          this.cardReader.init(menuItem.getLabel())
+          menuItem.setLabel(this.cardReader.library + ' | ' + this.cardReader.libraryDescription)
         }
 
-        if (cardReader.library !== '') {
-          if (cardReader.lastError === '') {
-            const alert = new Alert('Open e-ID is up and ready !\n\nUsing library ' + cardReader.library, { frame: false })
+        if (this.cardReader.library !== '') {
+          if (this.cardReader.lastError === '') {
+            const alert = new Alert('Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, { frame: false })
             alert.show()
             setTimeout(() => {
               alert.window.setVisible(false)
             }, 3000)
           } else {
-            const error = new Alert('An error occured:\n\n' + cardReader.lastError, { width: 600, height: 200 })
+            const error = new Alert('An error occured:\n\n' + this.cardReader.lastError, { width: 600, height: 200 })
             error.window.onClose = () => { gui.MessageLoop.quit() }
             error.show()
           }
@@ -153,7 +160,30 @@ export class App {
 
     gui.MessageLoop.run()
     fs.unlinkSync(trayIcon.tmp)
-    cardReader.finalize()
+    this.cardReader.finalize()
     process.exit(0)
+  }
+
+  read (buffer: Buffer): void {
+    if (this.uri === '' || this.currentSlot === null) {
+      return
+    }
+    const callback = 'https:' + this.uri.substring(this.uri.indexOf(':') + 1)
+    const confirm = gui.MessageBox.create()
+    confirm.setText(`${callback} wants to read the content of the card in ${this.currentSlot}\r\n\r\nDo you agree?`)
+    confirm.addButton('No', 0)
+    confirm.addButton('Yes', 1)
+    if (confirm.run() === 1) {
+      const allData = this.cardReader.readCard(buffer)
+      const data = {}
+      Object.keys(allData).forEach((key: string) => {
+        if ((key.match(/file/gi) == null) && (key.match(/data/gi) == null)) {
+          data[key] = allData[key]
+        }
+      })
+      const urlData = encodeURIComponent(JSON.stringify(data))
+      fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), this.uri + '\r\n' + callback + '\r\n' + JSON.stringify(data))
+      exec(`open -a Safari "${callback}${urlData}"`)
+    }
   }
 }
