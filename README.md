@@ -18,7 +18,7 @@ The project is under developement and not yet ready for production.
 
 The app can be installed by downloading the release from the [releases](https://github.com/e-id/e-id/releases) page.
 
-If no release is available, the app can be cloned, the installed and/or package.
+If no release is available, the app can be cloned, then installed and/or packaged.
 
 More information can be found [here](INSTALL.md)
 
