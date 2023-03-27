@@ -4,7 +4,9 @@
 * From the project folder run the following commands:
   - `npm i`
   - `npm run build`
+* The application is compiled inside the `build` folder
 * To start the app, use the following command:
   - `npm run start`
 * To package the app, use the following command:
   - `npm run package`
+* The application package can be found inside the `dist` folder
