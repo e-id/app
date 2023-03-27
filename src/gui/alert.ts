@@ -10,6 +10,9 @@ export class Alert {
     delete options.width
     delete options.height
     this.window = gui.Window.create(options)
+    if (process.platform !== 'darwin') {
+      this.window.setSkipTaskbar(true)
+    }
     this.message = message
   }
 

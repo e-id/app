@@ -1,5 +1,4 @@
 import * as gui from 'gui'
-import * as os from 'os'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -9,6 +8,10 @@ import { CardLibrary } from './service/card-library'
 import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
+
+if (process.platform === 'darwin') {
+  gui.app.setActivationPolicy('accessory')
+}
 
 const preferences = new Preferences('io.github.e-id')
 const cardReader = new CardReader()
@@ -28,7 +31,7 @@ if (currentSlot !== null) {
   console.log(`Using slot ${currentSlot}`)
 }
 
-const iconPath = path.join(__dirname, '../assets/tray' + (os.platform() === 'darwin' ? '-w' : '') + '.png')
+const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-w' : '') + '.png')
 const tray = gui.Tray.createWithImage(trayIcon.createFromPath(iconPath))
 
 const uri = process.argv.pop()

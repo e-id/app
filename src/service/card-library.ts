@@ -1,11 +1,10 @@
 import { globSync } from 'glob'
-import * as os from 'os'
 import * as path from 'path'
 
 export class CardLibrary {
   findAll (): string[] {
     const libraryPath = ((): string => {
-      switch (os.platform()) {
+      switch (process.platform) {
         case 'darwin':
           return '/Library'
         case 'linux':
@@ -18,7 +17,7 @@ export class CardLibrary {
     })()
 
     const libraryFile = ((): string => {
-      switch (os.platform()) {
+      switch (process.platform) {
         case 'darwin':
           return '*pkcs11*.dylib'
         case 'linux':
