@@ -182,8 +182,9 @@ export class App {
         }
       })
       const urlData = encodeURIComponent(JSON.stringify(data))
-      fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), this.uri + '\r\n' + callback + '\r\n' + JSON.stringify(data))
-      exec(`open -a Safari "${callback}${urlData}"`)
+      const caller = String(process.env.OPEN_EID_APP)
+      fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), caller + '\r\n' + this.uri + '\r\n' + callback + '\r\n' + JSON.stringify(data))
+      exec(`open -a "${caller}" "${callback}${urlData}"`)
     }
   }
 }
