@@ -2,6 +2,7 @@ import * as os from 'os'
 import * as fs from 'fs'
 import * as gui from 'gui'
 import * as path from 'path'
+import activeWindow from 'active-win'
 
 import { Helper } from './util/helper'
 import { Preferences } from './util/preferences'
@@ -19,6 +20,10 @@ export class App {
   start (): void {
     if (process.platform === 'darwin') {
       gui.app.setActivationPolicy('accessory')
+    }
+
+    if (process.platform === 'win32') {
+      // TODO registry for url scheme
     }
 
     const preferences = new Preferences('io.github.e-id')
@@ -182,9 +187,23 @@ export class App {
         }
       })
       const urlData = encodeURIComponent(JSON.stringify(data))
-      const caller = String(process.env.OPEN_EID_APP)
+      let caller = ''
+      if (process.platform === 'darwin') {
+        caller = String(process.env.OPEN_EID_APP ?? '')
+      }
+      if (process.platform === 'win32') {
+        caller = activeWindow.sync()?.owner.path ?? ''
+      }
       fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), caller + '\r\n' + this.uri + '\r\n' + callback + '\r\n' + JSON.stringify(data))
-      exec(`open -a "${caller}" "${callback}${urlData}"`)
+      if (process.platform === 'darwin') {
+        if (caller !== '') {
+          caller = `-a "${caller}"`
+        }
+        exec(`open ${caller} "${callback}${urlData}"`)
+      }
+      if (process.platform === 'win32') {
+        exec(`start "${caller}" "${callback}${urlData}"`)
+      }
     }
   }
 }
