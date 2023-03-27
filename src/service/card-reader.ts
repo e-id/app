@@ -41,7 +41,7 @@ export class CardReader {
     return slots
   }
 
-  readCard (slot: any): object {
+  readCard (slot: Buffer): object {
     const data = {}
     const session = this.pkcs11?.C_OpenSession(slot, pkcs11js.CKF_RW_SESSION | pkcs11js.CKF_SERIAL_SESSION)
     if (undefined !== session) {

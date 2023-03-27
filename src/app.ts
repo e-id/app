@@ -3,56 +3,39 @@ import * as os from 'os'
 import * as fs from 'fs'
 import * as path from 'path'
 
+import { Helper } from './util/helper'
+import { Preferences } from './util/preferences'
 import { CardLibrary } from './service/card-library'
 import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
-import { Preferences } from './util/preferences'
+
+const uri = process.argv.pop()
+if (undefined !== uri && uri.startsWith('e-id:')) {
+  process.exit(0)
+}
 
 const loading = new Alert('Loading...', { frame: false })
 loading.show()
 
 const trayIcon = new Image()
+
+const preferences = new Preferences('io.github.e-id')
 const cardReader = new CardReader()
+const cardLibrary = new CardLibrary()
+const helper = new Helper(preferences, cardLibrary, cardReader)
 
 setTimeout(() => {
-  const preferences = new Preferences('io.github.e-id')
-
-  const libraries = new CardLibrary().findAll()
-  let currentLibrary = preferences.getString('Library')
+  let currentLibrary = helper.getLibrary()
   if (currentLibrary !== null) {
-    cardReader.init(currentLibrary)
-    if (cardReader.lastError !== '') {
-      currentLibrary = null
-    }
+    preferences.setString('Library', currentLibrary)
+    console.log(`Using library ${currentLibrary}`)
   }
 
-  if (currentLibrary === null) {
-    const library = libraries.shift()
-    if (undefined !== library && library !== null) {
-      cardReader.init(library)
-      if (cardReader.lastError === '') {
-        preferences.setString('Library', library)
-        currentLibrary = library
-      }
-    }
-  }
-
-  const slots = cardReader.getSlots()
-  let currentSlot = preferences.getString('Slot')
-
-  if (currentLibrary !== null) {
-    if (slots.filter(slot => slot.slotDescription.trim() === currentSlot).length !== 1) {
-      currentSlot = null
-    }
-  }
-
-  if (currentSlot === null) {
-    const slot = slots.shift()
-    if (undefined !== slot && slot !== null) {
-      preferences.setString('Slot', slot.slotDescription.trim())
-      currentLibrary = slot.slotDescription.trim()
-    }
+  let currentSlot = helper.getSlot()
+  if (currentSlot !== null) {
+    preferences.setString('Slot', currentSlot)
+    console.log(`Using slot ${currentSlot}`)
   }
 
   const iconPath = path.join(__dirname, '../assets/tray' + (os.platform() === 'darwin' ? '-w' : '') + '.png')
@@ -63,7 +46,7 @@ setTimeout(() => {
   const trayLibItems: gui.MenuItem[] = []
   const trayLibrary = gui.MenuItem.create('submenu')
   trayLibrary.setLabel('Library')
-  libraries.forEach((library: string, index: number) => {
+  cardLibrary.findAll().forEach((library: string, index: number) => {
     const menuItem = gui.MenuItem.create('radio')
     menuItem.setLabel(library)
     const checked = currentLibrary !== null ? library === currentLibrary : index === 0
@@ -87,7 +70,7 @@ setTimeout(() => {
   const traySlotItems: gui.MenuItem[] = []
   const traySlot = gui.MenuItem.create('submenu')
   traySlot.setLabel('Reader')
-  slots.forEach((slot: any, index: number) => {
+  cardReader.getSlots().forEach((slot: any, index: number) => {
     const menuItem = gui.MenuItem.create('radio')
     menuItem.setLabel(slot.slotDescription.trim())
     const checked = currentSlot !== null ? menuItem.getLabel() === currentSlot : index === 0
@@ -126,19 +109,38 @@ setTimeout(() => {
       setTimeout(() => {
         alert.window.setVisible(false)
       }, 3000)
-      const slot = slots.filter(slot => slot.slotDescription.trim() === currentSlot).shift()
-      if (slot !== null) {
+      const slot = currentSlot !== null ? helper.getSlotByDescription(currentSlot) : null
+      if (slot === null) {
+        const wait = new Alert('Please connect reader and insert card')
+        wait.show()
+        const interval = setInterval(() => {
+          const slot = cardReader.getSlots().shift()
+          if (slot !== undefined && slot !== null) {
+            clearInterval(interval)
+            wait.window.setVisible(false)
+            currentSlot = slot.slotDescription.trim()
+            if (currentSlot !== null) {
+              preferences.setString('Slot', currentSlot)
+              console.log(`Using Slot ${currentSlot}`)
+            }
+            console.log(cardReader.readCard(slot.buffer))
+          }
+        }, 1000)
+        wait.window.onClose = () => {
+          clearInterval(interval)
+        }
+      } else {
         console.log(cardReader.readCard(slot.buffer))
       }
     } else {
-      const alert = new Alert('An error occured:\n\n' + cardReader.lastError, { width: 600, height: 200 })
-      alert.window.onClose = () => { gui.MessageLoop.quit() }
-      alert.show()
+      const error = new Alert('An error occured:\n\n' + cardReader.lastError, { width: 600, height: 200 })
+      error.window.onClose = () => { gui.MessageLoop.quit() }
+      error.show()
     }
   } else {
-    const alert = new Alert('No library found.\nPlease install middleware and try again.')
-    alert.window.onClose = () => { gui.MessageLoop.quit() }
-    alert.show()
+    const error = new Alert('No library found.\nPlease install middleware and try again.')
+    error.window.onClose = () => { gui.MessageLoop.quit() }
+    error.show()
   }
 }, 1000)
 
