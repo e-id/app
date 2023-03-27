@@ -2,8 +2,8 @@
   "name": "e-id",
   "version": "0.0.1",
   "description": "Open e-ID app",
-  "main": "dist/app.js",
-  "bin": "dist/app.js",
+  "main": "dist/main.js",
+  "bin": "dist/main.js",
   "devDependencies": {
     "@types/node": "^18.15.5",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
@@ -17,8 +17,8 @@
   },
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/app.js",
-    "test": "node dist/app.js e-id:",
+    "start": "node dist/main.js",
+    "test": "node dist/main.js e-id:",
     "lint": "npx eslint .  --ext .ts",
     "package": "node package.js"
   },
