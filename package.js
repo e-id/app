@@ -1,12 +1,22 @@
 const fs = require('fs')
-const os = require('os')
 const path = require('path')
 
 const { exec } = require('pkg')
 const { execSync } = require('node:child_process')
 
-exec(['--compress', 'Brotli', '.']).then(() => {
-  if (os.platform() === 'darwin') {
+const target = (() => {
+  switch (process.platform) {
+    case 'darwin':
+      return 'macos'
+    case 'win32':
+      return 'win'
+    default:
+      return process.platform
+  }
+})()
+
+exec(['--compress', process.platform === 'win32' ? 'None' : 'Brotli', '--targets', target, '.']).then(() => {
+  if (process.platform === 'darwin') {
     console.log(execSync('osacompile -o "dist/Open e-ID.app" src/mac/launcher.applescript').toString())
     console.log(execSync('plutil -replace LSUIElement -bool true "dist/Open e-ID.app/Contents/Info.plist"').toString())
     console.log(execSync('plutil -replace CFBundleIdentifier -string io.github.e-id "dist/Open e-ID.app/Contents/Info.plist"').toString())
