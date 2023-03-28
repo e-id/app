@@ -17,6 +17,7 @@ const target = (() => {
 
 exec(['--targets', target, '.']).then(() => {
   if (process.platform === 'darwin') {
+    // url launcher
     console.log(execSync('osacompile -o "dist/Open e-ID.app" src/mac/launcher.applescript').toString())
     console.log(execSync('plutil -replace LSUIElement -bool true "dist/Open e-ID.app/Contents/Info.plist"').toString())
     console.log(execSync('plutil -replace CFBundleIdentifier -string io.github.e-id "dist/Open e-ID.app/Contents/Info.plist"').toString())
@@ -26,7 +27,14 @@ exec(['--targets', target, '.']).then(() => {
     if (fs.existsSync('dist/Open e-ID.app/Contents/MacOS/e-id')) {
       fs.unlinkSync('dist/Open e-ID.app/Contents/MacOS/e-id')
     }
-    fs.copyFileSync('dist/e-id', 'dist/Open e-ID.app/Contents/MacOS/e-id')
+    // node launcher
+    console.log(execSync('osacompile -o "dist/Open e-ID.app/Contents/MacOS/e-id.app" src/mac/e-id.applescript').toString())
+    console.log(execSync('plutil -replace LSUIElement -bool true "dist/Open e-ID.app/Contents/MacOS/e-id.app/Contents/Info.plist"').toString())
+    fs.writeFileSync('dist/Open e-ID.app/Contents/MacOS/e-id.app/Contents/Resources/applet.icns', fs.readFileSync('assets/icon.icns'))
+    if (fs.existsSync('dist/Open e-ID.app/Contents/MacOS/e-id.app/Contents/MacOS/e-id')) {
+      fs.unlinkSync('dist/Open e-ID.app/Contents/MacOS/e-id.app/Contents/MacOS/e-id')
+    }
+    fs.copyFileSync('dist/e-id', 'dist/Open e-ID.app/Contents/MacOS/e-id.app/Contents/MacOS/e-id')
     if (fs.existsSync('dist/Open e-ID.app.zip')) {
       fs.unlinkSync('dist/Open e-ID.app.zip')
     }
