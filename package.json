@@ -26,7 +26,8 @@
     "scripts": "src/**/*.js",
     "assets": [
       "assets/**/*",
-      "node_modules/pkcs11js/build/Release/pkcs11.node"
+      "node_modules/pkcs11js/build/Release/pkcs11.node",
+      "node_modules/gui/gui.node"
     ],
     "targets": [
       "node18"
