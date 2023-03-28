@@ -203,7 +203,17 @@ export class App {
         exec(`open ${caller} "${callback}${urlData}"`)
       }
       if (process.platform === 'win32') {
-        execSync(`start "${caller}" "${callback}${urlData}"`)
+        if (
+          caller.includes('\\Code.exe') ||
+          caller.includes('\\WindowsTerminal.exe') ||
+          caller.includes('\\cmd.exe') ||
+          caller === ''
+        ) {
+          caller = 'start ""'
+        } else {
+          caller = `"${caller}"`
+        }
+        execSync(`${caller} "${callback}${urlData}"`)
       }
     }
   }

@@ -32,4 +32,7 @@ exec(['--compress', process.platform === 'win32' ? 'None' : 'Brotli', '--targets
     }
     console.log(execSync('zip -vr "Open e-ID.app.zip" "Open e-ID.app/" -x "*.DS_Store"', { cwd: path.join(__dirname, '/dist') }).toString())
   }
+  if (process.platform === 'win32') {
+    console.log(execSync(process.argv0 + ' editbin.js "dist/e-id.exe" "dist/Open e-ID.exe" "to_windows"').toString())
+  }
 })

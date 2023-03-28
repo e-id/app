@@ -7,6 +7,7 @@
   "devDependencies": {
     "@types/node": "^18.15.5",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
+    "bufferpack": "^0.0.6",
     "eslint": "^8.36.0",
     "eslint-config-standard-with-typescript": "^34.0.1",
     "eslint-plugin-import": "^2.27.5",
