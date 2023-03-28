@@ -23,7 +23,7 @@ export class CardLibrary {
         case 'linux':
           return '*pkcs11*.lib'
         case 'win32':
-          return '/Program*/!(j2)pkcs11*.dll'
+          return '/Program*/**/!(j2)pkcs11*.dll'
         default:
           return '*pkcs11*.lib'
       }

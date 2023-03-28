@@ -18,18 +18,18 @@ export class App {
   currentSlot: string | null = null
 
   start (): void {
+    const preferences = new Preferences('io.github.e-id')
+    const cardLibrary = new CardLibrary()
+    const helper = new Helper(preferences, cardLibrary, this.cardReader)
+    const trayIcon = new Image()
+
     if (process.platform === 'darwin') {
       gui.app.setActivationPolicy('accessory')
     }
 
     if (process.platform === 'win32') {
-      // TODO registry for url scheme
+      helper.registerProtocols()
     }
-
-    const preferences = new Preferences('io.github.e-id')
-    const cardLibrary = new CardLibrary()
-    const helper = new Helper(preferences, cardLibrary, this.cardReader)
-    const trayIcon = new Image()
 
     let currentLibrary = helper.getLibrary()
     if (currentLibrary !== null) {
@@ -143,6 +143,7 @@ export class App {
           menuItem.setLabel(this.cardReader.library + ' | ' + this.cardReader.libraryDescription)
         }
 
+        currentLibrary = helper.getLibrary()
         if (this.cardReader.library !== '') {
           if (this.cardReader.lastError === '') {
             const alert = new Alert('Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, { frame: false })
