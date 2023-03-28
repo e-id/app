@@ -15,7 +15,7 @@ const target = (() => {
   }
 })()
 
-exec(['--compress', process.platform === 'win32' ? 'None' : 'Brotli', '--targets', target, '.']).then(() => {
+exec(['--targets', target, '.']).then(() => {
   if (process.platform === 'darwin') {
     console.log(execSync('osacompile -o "dist/Open e-ID.app" src/mac/launcher.applescript').toString())
     console.log(execSync('plutil -replace LSUIElement -bool true "dist/Open e-ID.app/Contents/Info.plist"').toString())

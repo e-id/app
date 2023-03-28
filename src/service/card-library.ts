@@ -8,7 +8,7 @@ export class CardLibrary {
         case 'darwin':
           return '/Library'
         case 'linux':
-          return '/usr/local/lib'
+          return '/usr/lib'
         case 'win32':
           return ''
         default:
@@ -21,11 +21,11 @@ export class CardLibrary {
         case 'darwin':
           return '*pkcs11*.dylib'
         case 'linux':
-          return '*pkcs11*.lib'
+          return '*pkcs11*.so'
         case 'win32':
           return '/Program*/**/!(j2)pkcs11*.dll'
         default:
-          return '*pkcs11*.lib'
+          return '*pkcs11*.*'
       }
     })()
 
