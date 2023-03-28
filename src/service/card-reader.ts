@@ -29,14 +29,16 @@ export class CardReader {
     if (this.library === '') {
       return slots
     }
-    const slotList = this.pkcs11?.C_GetSlotList(true)
-    if (undefined !== slotList) {
-      slotList.forEach((slot: Buffer) => {
+    try {
+      const slotList = this.pkcs11?.C_GetSlotList(true)
+      slotList?.forEach((slot: Buffer) => {
         const slotInfo = this.pkcs11?.C_GetSlotInfo(slot)
         if (undefined !== slotInfo) {
           slots.push({ ...slotInfo, buffer: slot })
         }
       })
+    } catch (e) {
+      this.lastError = e.message
     }
     return slots
   }
