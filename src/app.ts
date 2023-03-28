@@ -150,6 +150,8 @@ export class App {
             alert.show()
             setTimeout(() => {
               alert.window.setVisible(false)
+              gui.MessageLoop.quit()
+              gui.MessageLoop.run()
             }, 3000)
           } else {
             const error = new Alert('An error occured:\n\n' + this.cardReader.lastError, { width: 600, height: 200 })
