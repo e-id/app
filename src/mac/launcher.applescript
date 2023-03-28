@@ -7,7 +7,7 @@ end open location
 
 on run
   set script_path to POSIX path of (path to me as text)
-  do shell script "open -n \"" & script_path & "Contents/MacOS/e-id\" & disown &"
+  do shell script "\"" & script_path & "Contents/MacOS/e-id\" > /dev/null 2>&1 &"
   error number -128
   return
 end run

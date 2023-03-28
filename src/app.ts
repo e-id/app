@@ -44,7 +44,7 @@ export class App {
     }
 
     const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-w' : '') + '.png')
-    const tray = gui.Tray.createWithImage(trayIcon.createFromPath(iconPath))
+    const tray = gui.Tray.createWithImage(trayIcon.createFromPath(iconPath)) // TODO - alternative UI for incompatible libappindicator linux distro
 
     const uri = process.argv.pop()
 
