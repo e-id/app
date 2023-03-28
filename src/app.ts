@@ -213,7 +213,7 @@ export class App {
         } else {
           caller = `"${caller}"`
         }
-        execSync(`${caller} "${callback}${urlData}"`)
+        execSync(`${caller} "${callback}${urlData}"`, { windowsHide: true })
       }
     }
   }
