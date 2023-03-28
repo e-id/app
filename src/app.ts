@@ -10,7 +10,7 @@ import { CardLibrary } from './service/card-library'
 import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
-import { exec } from 'child_process'
+import { exec, execSync } from 'child_process'
 
 export class App {
   cardReader = new CardReader()
@@ -203,7 +203,7 @@ export class App {
         exec(`open ${caller} "${callback}${urlData}"`)
       }
       if (process.platform === 'win32') {
-        exec(`start "${caller}" "${callback}${urlData}"`)
+        execSync(`start "${caller}" "${callback}${urlData}"`)
       }
     }
   }
