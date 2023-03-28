@@ -33,6 +33,29 @@ exec(['--compress', process.platform === 'win32' ? 'None' : 'Brotli', '--targets
     console.log(execSync('zip -vr "Open e-ID.app.zip" "Open e-ID.app/" -x "*.DS_Store"', { cwd: path.join(__dirname, '/dist') }).toString())
   }
   if (process.platform === 'win32') {
-    console.log(execSync(process.argv0 + ' editbin.js "dist/e-id.exe" "dist/Open e-ID.exe" "to_windows"').toString())
+    const { load } = require('pe-library/cjs')
+    load().then((PELibrary) => {
+      const data = fs.readFileSync('dist/e-id.exe')
+      const exe = PELibrary.NtExecutable.from(data)
+      const res = PELibrary.NtExecutableResource.from(exe)
+      const { load } = require('resedit/cjs')
+      load().then((ResEdit) => {
+        const viList = ResEdit.Resource.VersionInfo.fromEntries(res.entries)
+        const vi = viList[0]
+        vi.setFileVersion(0, 0, 1, 0, 1033)
+        vi.setStringValues(
+          { lang: 1033, codepage: 1200 },
+          {
+            FileDescription: 'Open e-ID',
+            ProductName: 'Open e-ID'
+          }
+        )
+        vi.outputToResourceEntries(res.entries)
+        res.outputResource(exe)
+        const newBinary = exe.generate()
+        fs.writeFileSync('dist/Open e-ID (console).exe', Buffer.from(newBinary))
+        console.log(execSync(process.argv0 + ' editbin.js "dist/Open e-ID (console).exe" "dist/Open e-ID.exe" "to_windows"').toString())
+      })
+    })
   }
 })
