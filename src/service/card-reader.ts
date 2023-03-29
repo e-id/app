@@ -55,9 +55,9 @@ export class CardReader {
           { type: pkcs11js.CKA_VALUE }
         ])
         if (undefined !== attrs) {
-          const label = attrs[0].value?.toString()
+          const label = attrs[0].value?.toString().toLowerCase()
           if (undefined !== label) {
-            data[label] = attrs[1].value?.toString()
+            data[label] = attrs[1].value
           }
         }
         hObject = this.pkcs11?.C_FindObjects(session)

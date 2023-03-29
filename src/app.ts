@@ -183,9 +183,11 @@ export class App {
       const include = url.searchParams.has('e-id-include') ? url.searchParams.get('e-id-include')?.split(',') ?? [] : []
       const exclude = url.searchParams.has('e-id-exclude') ? url.searchParams.get('e-id-exclude')?.split(',') ?? [] : []
       Object.keys(allData).forEach((key: string) => {
-        if ((key.match(/file/gi) == null) && (key.match(/data/gi) == null) && !include.includes(key.toLocaleLowerCase())) {
-          if (!exclude.includes(key.toLocaleLowerCase())) {
-            data[key] = allData[key]
+        if ((key.match(/file/gi) == null && key.match(/data/gi) == null) || include.includes(key)) {
+          if (!exclude.includes(key)) {
+            const encoding = ['atr', 'chip_number', 'photo_hash'].includes(key) ? 'hex' : 'base64'
+            // eslint-disable-next-line no-control-regex
+            data[key.toLowerCase()] = /[^\u0000-\u00ff]/.test(allData[key]) ? allData[key].toString(encoding) : allData[key].toString().trim()
           }
         }
       })
@@ -202,6 +204,8 @@ export class App {
       if (process.platform === 'darwin') {
         if (caller !== '') {
           cmd = `open --new -a ${caller} "${callback}${urlData}"`
+        } else {
+          cmd = `open --url "${callback}${urlData}"`
         }
         if (caller.includes('/Safari.app/')) {
           cmd = `open -a "${caller}" "${callback}${urlData}"`
