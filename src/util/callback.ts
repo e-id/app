@@ -21,7 +21,8 @@ export class Callback {
       caller = activeWindow.sync()?.owner.path ?? ''
     }
     let cmd = ''
-    const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' : false
+    const appMode = url.searchParams.has('e-id-app') ? url.searchParams.get('e-id-app') === '1' : false
+    const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' && !appMode : false
     if (process.platform === 'darwin') {
       if (caller !== '') {
         cmd = `open --new -a ${caller} "${callback}${urlData}"`
@@ -31,8 +32,8 @@ export class Callback {
       if (caller.includes('/Safari.app/')) {
         cmd = `open -a "${caller}" "${callback}${urlData}"`
       }
-      if (caller.includes('/Google Chrome.app/')) {
-        cmd = `open --new "${caller}" --args --new-window "${callback}${urlData}"`
+      if (caller.includes('/Google Chrome.app/') || caller.includes('/Microsoft Edge.app/')) {
+        cmd = `open --new "${caller}" --args --${appMode ? 'app=' : 'new-window '}"${callback}${urlData}"`
       }
       exec(cmd)
     }
@@ -47,7 +48,10 @@ export class Callback {
       } else {
         caller = `"${caller}"`
       }
-      cmd = `${caller} "${callback}${urlData}"`
+      if (caller.includes('chrome.exe') || caller.includes('msedge.exe')) {
+        caller = `${caller} --${appMode ? 'app=' : 'new-window '}`
+      }
+      cmd = `${caller}"${callback}${urlData}"`
       execSync(cmd, { windowsHide: hidden })
     }
   }

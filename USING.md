@@ -30,6 +30,9 @@ Options are added to the URL as request parameters. They are all prefixed with `
 
 * `e-id-always` : set to `1` to always return a result (also on error & on cancel)
 
+* `e-id-app` : set to `1` to start browser in app mode (dialog)
+  - depends on the browser
+
 ## Result
 
 The result contains a JSON representations of keys and values obtained from the card.
