@@ -4,13 +4,15 @@ import * as os from 'os'
 
 import * as gui from 'gui'
 
-export class Image {
-  tmp: string
+export class Image extends gui.Image {
+  public tmp: string
 
-  createFromPath (imagePath: string): gui.Image {
-    this.tmp = path.join(os.tmpdir(), Buffer.from(imagePath).toString('base64'))
-    fs.writeFileSync(this.tmp, fs.readFileSync(imagePath))
-    const image = gui.Image.createFromPath(this.tmp)
-    return image
+  public static createFromPath (imagePath: string): Image {
+    const tmp = path.join(os.tmpdir(), Buffer.from(imagePath).toString('base64'))
+    fs.writeFileSync(tmp, fs.readFileSync(imagePath))
+    const image = gui.Image.createFromPath(tmp)
+    const tempImage = image as Image
+    tempImage.tmp = tmp
+    return tempImage
   }
 }

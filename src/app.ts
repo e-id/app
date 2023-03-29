@@ -21,7 +21,8 @@ export class App {
     const preferences = new Preferences('io.github.e-id')
     const cardLibrary = new CardLibrary()
     const helper = new Helper(preferences, cardLibrary, this.cardReader)
-    const trayIcon = new Image()
+    const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-w' : '') + '.png')
+    const trayIcon = Image.createFromPath(iconPath)
 
     if (process.platform === 'darwin') {
       gui.app.setActivationPolicy('accessory')
@@ -43,8 +44,7 @@ export class App {
       console.log(`Using slot ${this.currentSlot}`)
     }
 
-    const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-w' : '') + '.png')
-    const tray = gui.Tray.createWithImage(trayIcon.createFromPath(iconPath)) // TODO - alternative UI for incompatible libappindicator linux distro
+    const tray = gui.Tray.createWithImage(trayIcon) // TODO - alternative UI for incompatible libappindicator linux distro
 
     const uri = process.argv.pop()
 
@@ -52,13 +52,12 @@ export class App {
       this.uri = uri
       const slot = this.currentSlot !== null ? helper.getSlotByDescription(this.currentSlot) : null
       if (slot === null) {
-        const wait = new Alert('Please connect reader and insert card')
-        wait.show()
+        const wait = Alert.create({ message: 'Please connect reader and insert card' })
         const interval = setInterval(() => {
           const slot = this.cardReader.getSlots().shift()
           if (slot !== undefined && slot !== null) {
             clearInterval(interval)
-            wait.window.setVisible(false)
+            wait.setVisible(false)
             this.currentSlot = slot.slotDescription.trim()
             if (this.currentSlot !== null) {
               preferences.setString('Slot', this.currentSlot)
@@ -68,7 +67,7 @@ export class App {
             process.exit(0)
           }
         }, 1000)
-        wait.window.onClose = () => {
+        wait.onClose = () => {
           clearInterval(interval)
         }
       } else {
@@ -76,8 +75,7 @@ export class App {
         process.exit(0)
       }
     } else {
-      const loading = new Alert('Loading...', { frame: false })
-      loading.show()
+      const loading = Alert.create({ message: 'Loading...', frame: false })
 
       setTimeout(() => {
         const trayMenuItems: gui.MenuItem[] = []
@@ -135,7 +133,7 @@ export class App {
 
         tray.setMenu(gui.Menu.create(trayMenuItems))
 
-        loading.window.setVisible(false)
+        loading.setVisible(false)
 
         for (let i = 0; i < trayLibMenu.itemCount(); i++) {
           const menuItem = trayLibMenu.itemAt(i)
@@ -146,22 +144,19 @@ export class App {
         currentLibrary = helper.getLibrary()
         if (this.cardReader.library !== '') {
           if (this.cardReader.lastError === '') {
-            const alert = new Alert('Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, { frame: false })
-            alert.show()
+            const alert = Alert.create({ message: 'Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, frame: false })
             setTimeout(() => {
-              alert.window.setVisible(false)
-              gui.MessageLoop.quit()
-              gui.MessageLoop.run()
+              alert.setVisible(false)
+              // gui.MessageLoop.quit()
+              // gui.MessageLoop.run()
             }, 3000)
           } else {
-            const error = new Alert('An error occured:\n\n' + this.cardReader.lastError, { width: 600, height: 200 })
-            error.window.onClose = () => { gui.MessageLoop.quit() }
-            error.show()
+            const error = Alert.create({ message: 'An error occured:\n\n' + this.cardReader.lastError, width: 600, height: 200 })
+            error.onClose = () => { gui.MessageLoop.quit() }
           }
         } else {
-          const error = new Alert('No library found.\nPlease install middleware and try again.')
-          error.window.onClose = () => { gui.MessageLoop.quit() }
-          error.show()
+          const error = Alert.create({ message: 'No library found.\nPlease install middleware and try again.' })
+          error.onClose = () => { gui.MessageLoop.quit() }
         }
       }, 1000)
     }
@@ -197,12 +192,16 @@ export class App {
       if (process.platform === 'win32') {
         caller = activeWindow.sync()?.owner.path ?? ''
       }
-      fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), caller + '\r\n' + this.uri + '\r\n' + callback + '\r\n' + JSON.stringify(data))
+      let cmd = ''
+      const url = new URL(callback)
+      const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' : false
       if (process.platform === 'darwin') {
         if (caller !== '') {
           caller = `-a "${caller}"`
         }
-        exec(`open ${caller} "${callback}${urlData}"`)
+        const flags = hidden ? '--hide --background' : ''
+        cmd = `open --new ${flags} ${caller} "${callback}${urlData}"`
+        exec(cmd)
       }
       if (process.platform === 'win32') {
         if (
@@ -211,12 +210,14 @@ export class App {
           caller.includes('\\cmd.exe') ||
           caller === ''
         ) {
-          caller = 'start ""'
+          caller = 'start /b ""'
         } else {
           caller = `"${caller}"`
         }
-        execSync(`${caller} "${callback}${urlData}"`, { windowsHide: true })
+        cmd = `${caller} "${callback}${urlData}"`
+        execSync(cmd, { windowsHide: hidden })
       }
+      fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), caller + '\r\n' + this.uri + '\r\n' + callback + '\r\n' + cmd + '\r\n' + JSON.stringify(data))
     }
   }
 }
