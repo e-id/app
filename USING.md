@@ -21,6 +21,8 @@ Options are added to the URL as request parameters. They are all prefixed with `
 
 * `e-id-include` : include specific keys (coma seperated) that the app excludes by default (e.g. `photo_file`)
   - all keys containing `file` or `data` are excluded by default
+  - use `*` to include all keys (including keys containing `file` or `data`)
+  - some platforms might not be able to load a long URL containing all the keys
 
 * `e-id-exclude` : exclude specific keys (coma seperated) from the result
   - use `*` to exclude all keys

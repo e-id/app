@@ -22,6 +22,7 @@
     "build": "npx tsc",
     "start": "node build/main.js",
     "test": "node build/main.js \"e-id://e-id.github.io/test.html?e-id-always=1&e-id-exclude=*&e-id-include=surname,firstnames,photo_file#\"",
+    "viewer": "node build/main.js \"e-id://e-id.github.io/viewer/?e-id-include=*#\"",
     "lint": "npx eslint .  --ext .ts",
     "package": "node package.js"
   },

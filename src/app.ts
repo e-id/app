@@ -191,7 +191,7 @@ export class App {
         return
       }
       const data = {}
-      const include = url.searchParams.has('e-id-include') ? url.searchParams.get('e-id-include')?.split(',') ?? [] : []
+      const include = url.searchParams.has('e-id-include') ? url.searchParams.get('e-id-include')?.replace('*', Object.keys(allData).join(',')).split(',') ?? [] : []
       const exclude = url.searchParams.has('e-id-exclude') ? url.searchParams.get('e-id-exclude')?.replace('*', Object.keys(allData).join(',')).split(',') ?? [] : []
       Object.keys(allData).forEach((key: string) => {
         if ((key.match(/file/gi) == null && key.match(/data/gi) == null) || include.includes(key)) {
