@@ -181,10 +181,10 @@ export class App {
       const allData = this.cardReader.readCard(buffer)
       const data = {}
       const include = url.searchParams.has('e-id-include') ? url.searchParams.get('e-id-include')?.split(',') ?? [] : []
-      const exclude = url.searchParams.has('e-id-exclude') ? url.searchParams.get('e-id-exclude')?.split(',') ?? [] : []
+      const exclude = url.searchParams.has('e-id-exclude') ? url.searchParams.get('e-id-exclude')?.replace('*', Object.keys(allData).join(',')).split(',') ?? [] : []
       Object.keys(allData).forEach((key: string) => {
         if ((key.match(/file/gi) == null && key.match(/data/gi) == null) || include.includes(key)) {
-          if (!exclude.includes(key)) {
+          if (!exclude.includes(key) || include.includes(key)) {
             const encoding = ['atr', 'chip_number', 'photo_hash'].includes(key) ? 'hex' : 'base64'
             // eslint-disable-next-line no-control-regex
             data[key.toLowerCase()] = /[^\u0000-\u00ff]/.test(allData[key]) ? allData[key].toString(encoding) : allData[key].toString().trim()
