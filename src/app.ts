@@ -174,7 +174,7 @@ export class App {
     const callback = 'https:' + this.uri.substring(this.uri.indexOf(':') + 1)
     const url = new URL(callback)
     const always = url.searchParams.has('e-id-always') ? url.searchParams.get('e-id-always') === '1' : false
-    confirm.setText(`${callback} wants to read the content of the card in ${this.currentSlot}\r\n\r\nDo you agree?`)
+    confirm.setText(`${url.host} wants to read the content of the card in ${this.currentSlot}\r\n\r\nDo you agree?`)
     confirm.addButton('No', 0)
     confirm.addButton('Yes', 1)
     if (confirm.run() === 1) {
