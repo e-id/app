@@ -172,6 +172,7 @@ export class App {
       return
     }
     const callback = 'https:' + this.uri.substring(this.uri.indexOf(':') + 1)
+    const url = new URL(callback)
     const confirm = gui.MessageBox.create()
     confirm.setText(`${callback} wants to read the content of the card in ${this.currentSlot}\r\n\r\nDo you agree?`)
     confirm.addButton('No', 0)
@@ -179,9 +180,13 @@ export class App {
     if (confirm.run() === 1) {
       const allData = this.cardReader.readCard(buffer)
       const data = {}
+      const include = url.searchParams.has('e-id-include') ? url.searchParams.get('e-id-include')?.split(',') ?? [] : []
+      const exclude = url.searchParams.has('e-id-exclude') ? url.searchParams.get('e-id-exclude')?.split(',') ?? [] : []
       Object.keys(allData).forEach((key: string) => {
-        if ((key.match(/file/gi) == null) && (key.match(/data/gi) == null)) {
-          data[key] = allData[key]
+        if ((key.match(/file/gi) == null) && (key.match(/data/gi) == null) && !include.includes(key.toLocaleLowerCase())) {
+          if (!exclude.includes(key.toLocaleLowerCase())) {
+            data[key] = allData[key]
+          }
         }
       })
       const urlData = encodeURIComponent(JSON.stringify(data))
@@ -193,7 +198,6 @@ export class App {
         caller = activeWindow.sync()?.owner.path ?? ''
       }
       let cmd = ''
-      const url = new URL(callback)
       const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' : false
       if (process.platform === 'darwin') {
         if (caller !== '') {
