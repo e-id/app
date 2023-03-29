@@ -38,6 +38,6 @@ Each key is lowercased and the value is converted to string.
 
 Keys containing `file` or `data` are encoded in base64.
 
-The following keys are encoded as hex : `atr`, `chip_number`, `photo_hash`.
+The following keys are encoded as hex : `atr`, `chip_number`, `photo_hash`, `carddata_*`.
 
 ## Helper library

@@ -196,9 +196,9 @@ export class App {
       Object.keys(allData).forEach((key: string) => {
         if ((key.match(/file/gi) == null && key.match(/data/gi) == null) || include.includes(key)) {
           if (!exclude.includes(key) || include.includes(key)) {
-            const encoding = ['atr', 'chip_number', 'photo_hash'].includes(key) ? 'hex' : 'base64'
+            const encoding = ['atr', 'chip_number', 'photo_hash'].includes(key) || key.startsWith('carddata_') ? 'hex' : 'base64'
             // eslint-disable-next-line no-control-regex
-            data[key.toLowerCase()] = /[^\u0000-\u00ff]/.test(allData[key]) ? allData[key].toString(encoding) : allData[key].toString().trim()
+            data[key.toLowerCase()] = /[^\u0019-\u00ff]/.test(allData[key]) ? allData[key].toString(encoding) : allData[key].toString().trim()
           }
         }
       })
