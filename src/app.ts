@@ -197,10 +197,14 @@ export class App {
       const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' : false
       if (process.platform === 'darwin') {
         if (caller !== '') {
-          caller = `-a "${caller}"`
+          cmd = `open --new -a ${caller} "${callback}${urlData}"`
         }
-        const flags = hidden ? '--hide --background' : ''
-        cmd = `open --new ${flags} ${caller} "${callback}${urlData}"`
+        if (caller.includes('/Safari.app/')) {
+          cmd = `open -a "${caller}" "${callback}${urlData}"`
+        }
+        if (caller.includes('/Google Chrome.app/')) {
+          cmd = `open --new "${caller}" --args --new-window "${callback}${urlData}"`
+        }
         exec(cmd)
       }
       if (process.platform === 'win32') {
