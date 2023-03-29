@@ -68,6 +68,7 @@ export class App {
           }
         }, 1000)
         wait.onClose = () => {
+          this.callback({ cancel: true })
           clearInterval(interval)
         }
       } else {
@@ -171,14 +172,26 @@ export class App {
     if (this.uri === '' || this.currentSlot === null) {
       return
     }
+    const confirm = gui.MessageBox.create()
     const callback = 'https:' + this.uri.substring(this.uri.indexOf(':') + 1)
     const url = new URL(callback)
-    const confirm = gui.MessageBox.create()
+    const always = url.searchParams.has('e-id-always') ? url.searchParams.get('e-id-always') === '1' : false
     confirm.setText(`${callback} wants to read the content of the card in ${this.currentSlot}\r\n\r\nDo you agree?`)
     confirm.addButton('No', 0)
     confirm.addButton('Yes', 1)
     if (confirm.run() === 1) {
-      const allData = this.cardReader.readCard(buffer)
+      let allData = {}
+      try {
+        allData = this.cardReader.readCard(buffer)
+      } catch (e) {
+        if (always) {
+          this.callback({ error: e.message })
+        } else {
+          const error = Alert.create({ message: 'An error occured:\n\n' + String(e.message), width: 600, height: 200 })
+          error.onClose = () => { gui.MessageLoop.quit() }
+        }
+        return
+      }
       const data = {}
       const include = url.searchParams.has('e-id-include') ? url.searchParams.get('e-id-include')?.split(',') ?? [] : []
       const exclude = url.searchParams.has('e-id-exclude') ? url.searchParams.get('e-id-exclude')?.replace('*', Object.keys(allData).join(',')).split(',') ?? [] : []
@@ -191,45 +204,55 @@ export class App {
           }
         }
       })
-      const urlData = encodeURIComponent(JSON.stringify(data))
-      let caller = ''
-      if (process.platform === 'darwin') {
-        caller = String(process.env.OPEN_EID_APP ?? '')
+      this.callback(data)
+    } else {
+      if (always) {
+        this.callback({ cancel: true })
       }
-      if (process.platform === 'win32') {
-        caller = activeWindow.sync()?.owner.path ?? ''
-      }
-      let cmd = ''
-      const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' : false
-      if (process.platform === 'darwin') {
-        if (caller !== '') {
-          cmd = `open --new -a ${caller} "${callback}${urlData}"`
-        } else {
-          cmd = `open --url "${callback}${urlData}"`
-        }
-        if (caller.includes('/Safari.app/')) {
-          cmd = `open -a "${caller}" "${callback}${urlData}"`
-        }
-        if (caller.includes('/Google Chrome.app/')) {
-          cmd = `open --new "${caller}" --args --new-window "${callback}${urlData}"`
-        }
-        exec(cmd)
-      }
-      if (process.platform === 'win32') {
-        if (
-          caller.includes('\\Code.exe') ||
-          caller.includes('\\WindowsTerminal.exe') ||
-          caller.includes('\\cmd.exe') ||
-          caller === ''
-        ) {
-          caller = 'start /b ""'
-        } else {
-          caller = `"${caller}"`
-        }
-        cmd = `${caller} "${callback}${urlData}"`
-        execSync(cmd, { windowsHide: hidden })
-      }
-      fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), caller + '\r\n' + this.uri + '\r\n' + callback + '\r\n' + cmd + '\r\n' + JSON.stringify(data))
     }
+  }
+
+  callback (data: object): void {
+    const callback = 'https:' + this.uri.substring(this.uri.indexOf(':') + 1)
+    const url = new URL(callback)
+    const urlData = encodeURIComponent(JSON.stringify(data))
+    let caller = ''
+    if (process.platform === 'darwin') {
+      caller = String(process.env.OPEN_EID_APP ?? '')
+    }
+    if (process.platform === 'win32') {
+      caller = activeWindow.sync()?.owner.path ?? ''
+    }
+    let cmd = ''
+    const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' : false
+    if (process.platform === 'darwin') {
+      if (caller !== '') {
+        cmd = `open --new -a ${caller} "${callback}${urlData}"`
+      } else {
+        cmd = `open --url "${callback}${urlData}"`
+      }
+      if (caller.includes('/Safari.app/')) {
+        cmd = `open -a "${caller}" "${callback}${urlData}"`
+      }
+      if (caller.includes('/Google Chrome.app/')) {
+        cmd = `open --new "${caller}" --args --new-window "${callback}${urlData}"`
+      }
+      exec(cmd)
+    }
+    if (process.platform === 'win32') {
+      if (
+        caller.includes('\\Code.exe') ||
+        caller.includes('\\WindowsTerminal.exe') ||
+        caller.includes('\\cmd.exe') ||
+        caller === ''
+      ) {
+        caller = 'start /b ""'
+      } else {
+        caller = `"${caller}"`
+      }
+      cmd = `${caller} "${callback}${urlData}"`
+      execSync(cmd, { windowsHide: hidden })
+    }
+    fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), caller + '\r\n' + this.uri + '\r\n' + callback + '\r\n' + cmd + '\r\n' + JSON.stringify(data))
   }
 }
