@@ -26,7 +26,7 @@ More information can be found [here](INSTALL.md)
 
 The app may require a middleware such as the belgian e-id middleware.
 
-After downloading the app. It must be run at least once to search a valid library.
+After downloading the app. It must be run at least once to registrer URL scheme and search a valid library.
 
 More information for users and web developers can be found [here](USING.md)
 
