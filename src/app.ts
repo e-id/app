@@ -1,16 +1,14 @@
-import * as os from 'os'
 import * as fs from 'fs'
 import * as gui from 'gui'
 import * as path from 'path'
-import activeWindow from 'active-win'
 
 import { Helper } from './util/helper'
+import { Callback } from './util/callback'
 import { Preferences } from './util/preferences'
 import { CardLibrary } from './service/card-library'
 import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
-import { exec, execSync } from 'child_process'
 
 export class App {
   cardReader = new CardReader()
@@ -68,7 +66,7 @@ export class App {
           }
         }, 1000)
         wait.onClose = () => {
-          this.callback({ cancel: true })
+          new Callback(this.uri).result({ cancel: true })
           clearInterval(interval)
         }
       } else {
@@ -185,7 +183,7 @@ export class App {
         allData = this.cardReader.readCard(buffer)
       } catch (e) {
         if (always) {
-          this.callback({ error: e.message })
+          new Callback(this.uri).result({ error: e.message })
         } else {
           const error = Alert.create({ message: 'An error occured:\n\n' + String(e.message), width: 600, height: 200 })
           error.onClose = () => { gui.MessageLoop.quit() }
@@ -204,55 +202,11 @@ export class App {
           }
         }
       })
-      this.callback(data)
+      new Callback(this.uri).result(data)
     } else {
       if (always) {
-        this.callback({ cancel: true })
+        new Callback(this.uri).result({ cancel: true })
       }
     }
-  }
-
-  callback (data: object): void {
-    const callback = 'https:' + this.uri.substring(this.uri.indexOf(':') + 1)
-    const url = new URL(callback)
-    const urlData = encodeURIComponent(JSON.stringify(data))
-    let caller = ''
-    if (process.platform === 'darwin') {
-      caller = String(process.env.OPEN_EID_APP ?? '')
-    }
-    if (process.platform === 'win32') {
-      caller = activeWindow.sync()?.owner.path ?? ''
-    }
-    let cmd = ''
-    const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' : false
-    if (process.platform === 'darwin') {
-      if (caller !== '') {
-        cmd = `open --new -a ${caller} "${callback}${urlData}"`
-      } else {
-        cmd = `open --url "${callback}${urlData}"`
-      }
-      if (caller.includes('/Safari.app/')) {
-        cmd = `open -a "${caller}" "${callback}${urlData}"`
-      }
-      if (caller.includes('/Google Chrome.app/')) {
-        cmd = `open --new "${caller}" --args --new-window "${callback}${urlData}"`
-      }
-      exec(cmd)
-    }
-    if (process.platform === 'win32') {
-      if (
-        caller.includes('\\Code.exe') ||
-        caller.includes('\\WindowsTerminal.exe') ||
-        caller.includes('\\cmd.exe') ||
-        caller === ''
-      ) {
-        caller = 'start /b ""'
-      } else {
-        caller = `"${caller}"`
-      }
-      cmd = `${caller} "${callback}${urlData}"`
-      execSync(cmd, { windowsHide: hidden })
-    }
-    fs.writeFileSync(path.join(os.homedir(), 'e-id.log'), caller + '\r\n' + this.uri + '\r\n' + callback + '\r\n' + cmd + '\r\n' + JSON.stringify(data))
   }
 }
