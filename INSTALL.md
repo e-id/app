@@ -10,3 +10,6 @@
 * To package the app, use the following command:
   - `npm run package`
 * The application package can be found inside the `dist` folder
+* You can test the app using this command:
+  - `npm run test`
+* The test result opens in your default browser
