@@ -178,7 +178,7 @@ export class App {
     confirm.addButton('No', 0)
     confirm.addButton('Yes', 1)
     if (confirm.run() === 1) {
-      let allData = {}
+      let allData: { log_file?: string } = {}
       try {
         allData = this.cardReader.readCard(buffer)
       } catch (e) {
@@ -190,6 +190,7 @@ export class App {
         }
         return
       }
+      allData.log_file = `Library: ${this.cardReader.library}\n${this.cardReader.libraryDescription}\nSlot: ${this.currentSlot}`
       const data = {}
       const include = url.searchParams.has('e-id-include') ? url.searchParams.get('e-id-include')?.replace('*', Object.keys(allData).join(',')).split(',') ?? [] : []
       const exclude = url.searchParams.has('e-id-exclude') ? url.searchParams.get('e-id-exclude')?.replace('*', Object.keys(allData).join(',')).split(',') ?? [] : []
