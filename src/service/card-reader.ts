@@ -47,8 +47,9 @@ export class CardReader {
     const data = {}
     const session = this.pkcs11?.C_OpenSession(slot, pkcs11js.CKF_RW_SESSION | pkcs11js.CKF_SERIAL_SESSION)
     if (undefined !== session) {
+      let hObject: Buffer | null | undefined
       this.pkcs11?.C_FindObjectsInit(session, [{ type: pkcs11js.CKA_CLASS, value: pkcs11js.CKO_DATA }])
-      let hObject = this.pkcs11?.C_FindObjects(session)
+      hObject = this.pkcs11?.C_FindObjects(session)
       while (undefined !== hObject && hObject !== null) {
         const attrs = this.pkcs11?.C_GetAttributeValue(session, hObject, [
           { type: pkcs11js.CKA_LABEL },
@@ -58,6 +59,22 @@ export class CardReader {
           const label = attrs[0].value?.toString().toLowerCase()
           if (undefined !== label) {
             data[label] = attrs[1].value
+          }
+        }
+        hObject = this.pkcs11?.C_FindObjects(session)
+      }
+      this.pkcs11?.C_FindObjectsFinal(session)
+      this.pkcs11?.C_FindObjectsInit(session, [{ type: pkcs11js.CKA_CLASS, value: pkcs11js.CKO_CERTIFICATE }])
+      hObject = this.pkcs11?.C_FindObjects(session)
+      while (undefined !== hObject && hObject !== null) {
+        const attrs = this.pkcs11?.C_GetAttributeValue(session, hObject, [
+          { type: pkcs11js.CKA_LABEL },
+          { type: pkcs11js.CKA_VALUE }
+        ])
+        if (undefined !== attrs) {
+          const label = attrs[0].value?.toString().toLowerCase()
+          if (undefined !== label) {
+            data['cert_' + label + '_file'] = attrs[1].value
           }
         }
         hObject = this.pkcs11?.C_FindObjects(session)
