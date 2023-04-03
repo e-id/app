@@ -19,10 +19,11 @@ export class App {
     const preferences = new Preferences('io.github.e-id')
     const cardLibrary = new CardLibrary()
     const helper = new Helper(preferences, cardLibrary, this.cardReader)
-    const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-w' : '') + '.png')
+    const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-mac' : '') + '.png')
     const trayIcon = Image.createFromPath(iconPath)
 
     if (process.platform === 'darwin') {
+      trayIcon.setTemplate(true)
       gui.app.setActivationPolicy('accessory')
     }
 
