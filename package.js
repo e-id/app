@@ -48,6 +48,13 @@ exec(['--targets', target, '.']).then(() => {
       const res = PELibrary.NtExecutableResource.from(exe)
       const { load } = require('resedit/cjs')
       load().then((ResEdit) => {
+        const iconFile = ResEdit.Data.IconFile.from(fs.readFileSync('assets/icon.ico'))
+        ResEdit.Resource.IconGroupEntry.replaceIconsForResource(
+          res.entries,
+          101,
+          1033,
+          iconFile.icons.map((item) => item.data)
+        )
         const viList = ResEdit.Resource.VersionInfo.fromEntries(res.entries)
         const vi = viList[0]
         vi.setFileVersion(0, 0, 1, 0, 1033)
