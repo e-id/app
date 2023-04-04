@@ -1,7 +1,7 @@
 import * as gui from 'gui'
 
 export class Alert extends gui.Window {
-  public static create (options: any): Alert {
+  public static create (options: any): gui.Window {
     const message = options.message ?? ''
     delete options.message
 
@@ -13,12 +13,14 @@ export class Alert extends gui.Window {
     const alert = window as Alert
 
     const contentView = gui.Container.create()
-    contentView.setStyle({ flexDirection: 'row' })
+    contentView.setStyle({ flexDirection: 'column' })
     alert.setContentView(contentView)
 
-    const label = gui.Label.create(message)
-    label.setStyle({ flex: 1 })
-    contentView.addChildView(label)
+    if (message !== '') {
+      const label = gui.Label.create(message)
+      label.setStyle({ flex: 1 })
+      contentView.addChildView(label)
+    }
 
     alert.setContentSize({ width: alertOptions.width ?? 400, height: alertOptions.height ?? 100 })
     alert.setAlwaysOnTop(true)

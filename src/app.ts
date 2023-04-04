@@ -43,7 +43,12 @@ export class App {
       console.log(`Using slot ${this.currentSlot}`)
     }
 
-    const tray = gui.Tray.createWithImage(trayIcon) // TODO - alternative UI for incompatible libappindicator linux distro
+    let tray: gui.Tray | gui.Window | null = null
+    try {
+      tray = gui.Tray.createWithImage(trayIcon)
+    } catch (e) {
+      tray = Alert.create({})
+    }
 
     const uri = process.argv.pop()
 
@@ -131,7 +136,18 @@ export class App {
         trayQuit.onClick = () => { gui.MessageLoop.quit() }
         trayMenuItems.push(trayQuit)
 
-        tray.setMenu(gui.Menu.create(trayMenuItems))
+        if (tray instanceof gui.Tray) {
+          tray.setMenu(gui.Menu.create(trayMenuItems))
+        }
+
+        if (tray instanceof gui.Window) {
+          const menu = gui.Menu.create(trayMenuItems)
+          const win = Alert.create({})
+          const button = gui.Button.create({ title: 'Menu' })
+          button.onClick = () => { menu.popup() }
+          const container = win.getContentView() as gui.Container
+          container.addChildView(button)
+        }
 
         loading.setVisible(false)
 
