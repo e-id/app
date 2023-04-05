@@ -13,7 +13,9 @@ export class CardReader {
 
     this.library = library
     try {
-      this.pkcs11 = new pkcs11js.PKCS11()
+      if (this.pkcs11 === null) {
+        this.pkcs11 = new pkcs11js.PKCS11()
+      }
       this.pkcs11.load(library)
       this.pkcs11.C_Initialize()
       const moduleInfo = this.pkcs11.C_GetInfo()

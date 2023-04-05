@@ -57,6 +57,8 @@ export class Helper {
       this.cardReader.init(library)
       if (this.cardReader.lastError !== '') {
         library = null
+      } else {
+        this.cardReader.finalize()
       }
     }
     if (library === null) {
@@ -64,6 +66,8 @@ export class Helper {
       this.cardReader.init(library)
       if (this.cardReader.lastError !== '') {
         library = null
+      } else {
+        this.cardReader.finalize()
       }
     }
     return library

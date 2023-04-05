@@ -35,12 +35,12 @@ export class App {
     if (currentLibrary !== null) {
       preferences.setString('Library', currentLibrary)
       console.log(`Using library ${currentLibrary}`)
-    }
-
-    this.currentSlot = helper.getSlot()
-    if (this.currentSlot !== null) {
-      preferences.setString('Slot', this.currentSlot)
-      console.log(`Using slot ${this.currentSlot}`)
+      this.cardReader.init(currentLibrary)
+      this.currentSlot = helper.getSlot()
+      if (this.currentSlot !== null) {
+        preferences.setString('Slot', this.currentSlot)
+        console.log(`Using slot ${this.currentSlot}`)
+      }
     }
 
     let tray: gui.Tray | gui.Window | null = null
@@ -154,6 +154,9 @@ export class App {
         for (let i = 0; i < trayLibMenu.itemCount(); i++) {
           const menuItem = trayLibMenu.itemAt(i)
           this.cardReader.init(menuItem.getLabel())
+          if (this.cardReader.lastError !== '') {
+            menuItem.setEnabled(false)
+          }
           menuItem.setLabel(this.cardReader.library + ' | ' + this.cardReader.libraryDescription)
         }
 
