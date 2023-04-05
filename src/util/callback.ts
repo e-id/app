@@ -44,9 +44,9 @@ export class Callback {
         caller.includes('\\cmd.exe') ||
         caller === ''
       ) {
-        caller = 'start /b ""'
+        caller = 'start /b "" '
       } else {
-        caller = `"${caller}"`
+        caller = `"${caller}" `
       }
       if (caller.includes('chrome.exe') || caller.includes('msedge.exe')) {
         caller = `${caller} --${appMode ? 'app=' : 'new-window '}`
