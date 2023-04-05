@@ -56,6 +56,7 @@ export class App {
     let tray: gui.Tray | gui.Window | null = null
     try {
       tray = gui.Tray.createWithImage(trayIcon)
+      tray.getBounds()
     } catch (e) {
       tray = Alert.create({})
     }
@@ -151,12 +152,15 @@ export class App {
         }
 
         if (tray instanceof gui.Window) {
-          const menu = gui.Menu.create(trayMenuItems)
-          const win = Alert.create({})
-          const button = gui.Button.create({ title: 'Menu' })
-          button.onClick = () => { menu.popup() }
-          const container = win.getContentView() as gui.Container
-          container.addChildView(button)
+          if (process.platform === 'darwin') {
+            const menu = gui.Menu.create(trayMenuItems)
+            const button = gui.Button.create({ title: 'Menu' })
+            button.onClick = () => { menu.popup() }
+            const container = tray.getContentView() as gui.Container
+            container.addChildView(button)
+          } else {
+            tray.setMenuBar(gui.MenuBar.create(trayMenuItems))
+          }
         }
 
         loading.setVisible(false)

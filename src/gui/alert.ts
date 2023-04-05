@@ -22,13 +22,14 @@ export class Alert extends gui.Window {
       contentView.addChildView(label)
     }
 
+    alert.setTitle('Open e-ID')
     alert.setContentSize({ width: alertOptions.width ?? 400, height: alertOptions.height ?? 100 })
     alert.setAlwaysOnTop(true)
-    alert.setResizable(false)
     alert.setMaximizable(false)
     alert.setMinimizable(false)
     alert.center()
     alert.activate()
+    alert.setResizable(false)
 
     return alert
   }
