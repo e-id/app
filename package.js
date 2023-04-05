@@ -46,18 +46,17 @@ exec(['--targets', target, '.']).then(() => {
     load().then((PELibrary) => {
       const data = fs.readFileSync('dist/e-id.exe')
       const exe = PELibrary.NtExecutable.from(data)
+      exe.newHeader.optionalHeader.subsystem = 2
       const res = PELibrary.NtExecutableResource.from(exe)
       const { load } = require('resedit/cjs')
       load().then((ResEdit) => {
-        // const iconFile = ResEdit.Data.IconFile.from(fs.readFileSync('assets/icon.ico'))
-        /*
+        const iconFile = ResEdit.Data.IconFile.from(fs.readFileSync('assets/icon.ico'))
         ResEdit.Resource.IconGroupEntry.replaceIconsForResource(
           res.entries,
-          101,
+          1,
           1033,
           iconFile.icons.map((item) => item.data)
         )
-        */
         const viList = ResEdit.Resource.VersionInfo.fromEntries(res.entries)
         const vi = viList[0]
         vi.setFileVersion(0, 0, 1, 0, 1033)
@@ -71,8 +70,7 @@ exec(['--targets', target, '.']).then(() => {
         vi.outputToResourceEntries(res.entries)
         res.outputResource(exe)
         const newBinary = exe.generate()
-        fs.writeFileSync('dist/Open e-ID (console).exe', Buffer.from(newBinary))
-        console.log(execSync(process.argv0 + ' editbin.js "dist/Open e-ID (console).exe" "dist/Open e-ID.exe" "to_windows"').toString())
+        fs.writeFileSync('dist/Open e-ID.exe', Buffer.from(newBinary))
       })
     })
   }
