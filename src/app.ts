@@ -2,6 +2,8 @@ import * as fs from 'fs'
 import * as gui from 'gui'
 import * as path from 'path'
 
+import activeWindow from 'active-win'
+
 import { Helper } from './util/helper'
 import { Callback } from './util/callback'
 import { Preferences } from './util/preferences'
@@ -12,10 +14,18 @@ import { Image } from './gui/image'
 
 export class App {
   cardReader = new CardReader()
+  caller = ''
   uri = ''
   currentSlot: string | null = null
 
   start (): void {
+    if (process.platform === 'darwin') {
+      this.caller = String(process.env.OPEN_EID_APP ?? '')
+    }
+    if (process.platform === 'win32') {
+      this.caller = activeWindow.sync()?.owner.path ?? ''
+    }
+
     const preferences = new Preferences('io.github.e-id')
     const cardLibrary = new CardLibrary()
     const helper = new Helper(preferences, cardLibrary, this.cardReader)
@@ -72,7 +82,7 @@ export class App {
           }
         }, 1000)
         wait.onClose = () => {
-          new Callback(this.uri).result({ cancel: true })
+          new Callback(this.caller, this.uri).result({ cancel: true })
           clearInterval(interval)
         }
       } else {
@@ -203,7 +213,7 @@ export class App {
         allData = this.cardReader.readCard(buffer)
       } catch (e) {
         if (always) {
-          new Callback(this.uri).result({ error: e.message })
+          new Callback(this.caller, this.uri).result({ error: e.message })
         } else {
           const error = Alert.create({ message: 'An error occured:\n\n' + String(e.message), width: 600, height: 200 })
           error.onClose = () => { gui.MessageLoop.quit() }
@@ -223,10 +233,10 @@ export class App {
           }
         }
       })
-      new Callback(this.uri).result(data)
+      new Callback(this.caller, this.uri).result(data)
     } else {
       if (always) {
-        new Callback(this.uri).result({ cancel: true })
+        new Callback(this.caller, this.uri).result({ cancel: true })
       }
     }
   }

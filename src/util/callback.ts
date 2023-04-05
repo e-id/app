@@ -1,25 +1,19 @@
-import activeWindow from 'active-win'
-
 import { exec, execSync } from 'child_process'
 
 export class Callback {
+  private readonly caller: string
   private readonly uri: string
 
-  public constructor (uri: string) {
+  public constructor (caller: string, uri: string) {
+    this.caller = caller
     this.uri = uri
   }
 
   public result (data: object): void {
     const callback = 'https:' + this.uri.substring(this.uri.indexOf(':') + 1)
     const url = new URL(callback)
-    const urlData = encodeURIComponent(JSON.stringify(data))
-    let caller = ''
-    if (process.platform === 'darwin') {
-      caller = String(process.env.OPEN_EID_APP ?? '')
-    }
-    if (process.platform === 'win32') {
-      caller = activeWindow.sync()?.owner.path ?? ''
-    }
+    let urlData = encodeURIComponent(JSON.stringify(data))
+    let caller = this.caller
     let cmd = ''
     const appMode = url.searchParams.has('e-id-app') ? url.searchParams.get('e-id-app') === '1' : false
     const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' && !appMode : false
@@ -51,7 +45,17 @@ export class Callback {
       if (caller.includes('chrome.exe') || caller.includes('msedge.exe')) {
         caller = `${caller} --${appMode ? 'app=' : 'new-window '}`
       }
-      cmd = `${caller}"${callback}${urlData}"`
+      const certKeys = Object.keys(data).filter((key: string) => key.includes('cert_'))
+      const dataKeys = Object.keys(data).filter((key: string) => key.includes('data'))
+      const fileKeys = Object.keys(data).filter((key: string) => key.includes('file'))
+      while ((cmd = `${caller}"${callback}${urlData}"`).length > 8192) {
+        const key = certKeys.length > 0 ? certKeys.shift() : dataKeys.length > 0 ? dataKeys.shift() : fileKeys.length > 0 ? fileKeys.shift() : undefined
+        if (undefined !== key) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete data[key]
+        }
+        urlData = encodeURIComponent(JSON.stringify(data))
+      }
       execSync(cmd, { windowsHide: hidden })
     }
   }
