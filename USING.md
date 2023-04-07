@@ -23,7 +23,7 @@ Options are added to the URL as request parameters. They are all prefixed with `
   - all keys containing `file` or `data` are excluded by default
   - use `*` to include all keys (including keys containing `file` or `data`)
   - some platforms might not be able to load a long URL containing all the keys[^1]
-  - the app add a `log_file` variable (not returned by default) containing the library and slot used when reading
+  - the app adds a `log_file` variable (not returned by default) containing the library and slot used when reading
 
 * `e-id-exclude` : exclude specific keys (coma seperated) from the result
   - use `*` to exclude all keys
@@ -36,7 +36,7 @@ Options are added to the URL as request parameters. They are all prefixed with `
 
 ## Result
 
-The result contains a JSON representations of keys and values obtained from the card.
+The result contains a JSON representation of keys and values obtained from the card.
 
 Each key is lowercased and the value is converted to string.
 
