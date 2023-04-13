@@ -87,6 +87,7 @@ export class App {
         wait.onClose = () => {
           new Callback(this.caller, this.uri).result({ cancel: true })
           clearInterval(interval)
+          process.exit(0)
         }
       } else {
         this.read(slot.buffer)
