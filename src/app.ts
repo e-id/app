@@ -12,6 +12,8 @@ import { CardReader } from './service/card-reader'
 import { Alert } from './gui/alert'
 import { Image } from './gui/image'
 
+// Check for updates - https://api.github.com/repos/e-id/app/releases?callback=
+
 export class App {
   cardReader = new CardReader()
   caller = ''
