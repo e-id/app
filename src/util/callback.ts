@@ -16,7 +16,7 @@ export class Callback {
     let caller = this.caller
     let cmd = ''
     const appMode = url.searchParams.has('e-id-app') ? url.searchParams.get('e-id-app') === '1' : false
-    const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' && !appMode : false
+    // const hidden = url.searchParams.has('e-id-hidden') ? url.searchParams.get('e-id-hidden') === '1' && !appMode : false
     if (process.platform === 'darwin') {
       if (caller !== '') {
         cmd = `open --new -a ${caller} "${callback}${urlData}"`
@@ -56,7 +56,7 @@ export class Callback {
         }
         urlData = encodeURIComponent(JSON.stringify(data))
       }
-      execSync(cmd, { windowsHide: hidden })
+      execSync(cmd, { windowsHide: true })
     }
   }
 }

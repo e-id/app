@@ -7,7 +7,7 @@ export class CardReader {
   lastError: string = ''
 
   init (library: string): void {
-    if (this.library !== '' && this.lastError === '') {
+    if (this.library !== '') {
       this.finalize()
     }
 
@@ -32,6 +32,7 @@ export class CardReader {
       return slots
     }
     try {
+      this.init(this.library)
       const slotList = this.pkcs11?.C_GetSlotList(true)
       slotList?.forEach((slot: Buffer) => {
         const slotInfo = this.pkcs11?.C_GetSlotInfo(slot)
@@ -91,7 +92,7 @@ export class CardReader {
       try {
         this.pkcs11.C_Finalize()
       } catch (e) {
-        this.lastError = e.message
+        console.log(e)
       }
     }
   }
