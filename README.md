@@ -14,6 +14,21 @@ The apps are based on non intrusive, secure and standard technologies such as:
 
 The project is under developement and not yet ready for production.
 
+The first stable release will be 0.1.0 when it features at least:
+
+* custom library selection
+* user preferences
+* error handling
+* reading card content
+* callback to current app
+* auto update
+
+Next releases will feature:
+
+* firefox extension & native messaging host
+* digital signature
+* authentication
+
 ## Installing
 
 The app can be installed by downloading the release from the [releases](https://github.com/e-id/e-id/releases) page.

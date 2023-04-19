@@ -1,5 +1,25 @@
 # Using
 
+## For end users
+
+The app can be installed by downloading the release from the [releases](https://github.com/e-id/e-id/releases) page.
+
+If no release is available, the app can be cloned, then installed and/or packaged.
+
+More information can be found [here](INSTALL.md)
+
+The app may require a middleware such as the belgian e-id middleware.
+
+After downloading the app. It must be run at least once to registrer URL scheme and search a valid library.
+
+Locate the e-ID icon in the system tray to open a menu where you can select a valid library (auto-selects first valid library).
+
+The app does not need to run in the background. It can be closed at any time.
+
+If the executable is moved, it must be run once to update its location used for the URL scheme registration.
+
+## For developers
+
 Developers can easily integrate Open e-ID application using its custom URL scheme `e-id://`
 
 The protocol URL starts with callback URL. Open e-ID app will replace `e-id://` width `https://` when returning the result.
@@ -11,7 +31,7 @@ Examples:
 * eid://e-id.github.io/test.html#
 * eid://e-id.github.io/test.html?e-id-result=
 
-## Options
+### Options
 
 Options are added to the URL as request parameters. They are all prefixed with `e-id-`
 
@@ -34,7 +54,7 @@ Options are added to the URL as request parameters. They are all prefixed with `
 * `e-id-app` : set to `1` to start browser in app mode (dialog)
   - depends on the browser
 
-## Result
+### Result
 
 The result contains a JSON representation of keys and values obtained from the card.
 
@@ -49,7 +69,7 @@ Certificates are loaded into keys prefixed with `cert_` and encoded in base64.
 [^1]: due to limitations on Windows, the whole callback command will be limited to 8192 bytes
 removing keys starting with `cert_`, then `data` and finally `file` keys
 
-## Helper library
+### Helper library
 
 The helper library makes it easier for developers to integrate Open e-ID with their websites.
 
