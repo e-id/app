@@ -159,6 +159,12 @@ export class App {
           }
           traySlotItems.push(menuItem)
         })
+        if (traySlotItems.length === 0) {
+          const menuItem = gui.MenuItem.create('label')
+          menuItem.setLabel('Please connect reader and insert card')
+          menuItem.setEnabled(false)
+          traySlotItems.push(menuItem)
+        }
         const traySlotMenu = gui.Menu.create(traySlotItems)
         traySlot.setSubmenu(traySlotMenu)
         trayMenuItems.push(traySlot)
