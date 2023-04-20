@@ -19,6 +19,7 @@ export class App {
   caller = ''
   uri = ''
   currentSlot: string | null = null
+  quietMode: boolean = false
 
   start (): void {
     if (process.platform === 'darwin') {
@@ -33,6 +34,8 @@ export class App {
     const helper = new Helper(preferences, cardLibrary, this.cardReader)
     const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-mac' : '') + '.png')
     const trayIcon = Image.createFromPath(iconPath)
+
+    this.quietMode = (preferences.getString('QuietMode') ?? '') === '1'
 
     if (process.platform === 'darwin') {
       trayIcon.setTemplate(true)
@@ -64,6 +67,10 @@ export class App {
     }
 
     const uri = process.argv.pop()
+    if (undefined !== uri && uri === '--quiet-mode') {
+      this.quietMode = true
+      preferences.setString('QuietMode', this.quietMode ? '1' : '0')
+    }
 
     if (undefined !== uri && (uri.startsWith('e-id://') || uri.startsWith('open-eid://')) && currentLibrary !== null) {
       this.uri = uri
@@ -95,6 +102,9 @@ export class App {
       }
     } else {
       const loading = Alert.create({ message: 'Loading...', frame: false })
+      if (this.quietMode) {
+        loading.setVisible(false)
+      }
 
       setTimeout(() => {
         const trayMenuItems: gui.MenuItem[] = []
@@ -145,6 +155,15 @@ export class App {
 
         trayMenuItems.push(gui.MenuItem.create('separator'))
 
+        const trayQuietMode = gui.MenuItem.create('checkbox')
+        trayQuietMode.setLabel('Silent mode')
+        trayQuietMode.setChecked(this.quietMode)
+        trayQuietMode.onClick = (item: gui.MenuItem) => {
+          this.quietMode = item.isChecked()
+          preferences.setString('QuietMode', this.quietMode ? '1' : '0')
+        }
+        trayMenuItems.push(trayQuietMode)
+
         const trayQuit = gui.MenuItem.create('label')
         trayQuit.setLabel('Quit')
         trayQuit.onClick = () => { gui.MessageLoop.quit() }
@@ -181,18 +200,31 @@ export class App {
         if (this.cardReader.library !== '') {
           if (this.cardReader.lastError === '') {
             const alert = Alert.create({ message: 'Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, frame: false })
+            if (this.quietMode) {
+              alert.setVisible(false)
+            }
             setTimeout(() => {
               alert.setVisible(false)
               // gui.MessageLoop.quit()
               // gui.MessageLoop.run()
             }, 3000)
           } else {
-            const error = Alert.create({ message: 'An error occured:\n\n' + this.cardReader.lastError, width: 600, height: 200 })
-            error.onClose = () => { gui.MessageLoop.quit() }
+            if (this.quietMode) {
+              console.error(this.cardReader.lastError)
+              gui.MessageLoop.quit()
+            } else {
+              const error = Alert.create({ message: 'An error occured:\n\n' + this.cardReader.lastError, width: 600, height: 200 })
+              error.onClose = () => { gui.MessageLoop.quit() }
+            }
           }
         } else {
-          const error = Alert.create({ message: 'No library found.\nPlease install middleware and try again.' })
-          error.onClose = () => { gui.MessageLoop.quit() }
+          if (this.quietMode) {
+            console.error('No library found. Please install middleware and try again.')
+            gui.MessageLoop.quit()
+          } else {
+            const error = Alert.create({ message: 'No library found.\nPlease install middleware and try again.' })
+            error.onClose = () => { gui.MessageLoop.quit() }
+          }
         }
       }, 1000)
     }
