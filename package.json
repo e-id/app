@@ -21,6 +21,8 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node build/main.js",
+    "start-quiet": "node build/main.js --quiet-mode",
+    "start-exit-success": "node build/main.js --quiet-mode --exit-on-success",
     "test": "node build/main.js \"e-id://e-id.github.io/test.html?e-id-callback=eIdTest&e-id-always=1&e-id-exclude=*&e-id-include=surname,firstnames,photo_file#\"",
     "viewer": "node build/main.js \"e-id://e-id.github.io/viewer/?e-id-callback=eIdViewerDisplay&e-id-include=*#\"",
     "lint": "npx eslint .  --ext .ts",

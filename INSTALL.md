@@ -13,3 +13,13 @@
 * You can test the app using this command:
   - `npm run test`
 * The test result opens in your default browser
+
+## For administrators
+
+Administrators can add the application to startup applications without displaying any feedback to the user (aka "silent mode").
+
+`"Open e-ID" --quiet-mode`
+
+It's also possible to quit the application on successfull startup.
+
+`"Open e-ID" --quiet-mode --exit-on-success`

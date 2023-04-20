@@ -20,6 +20,7 @@ export class App {
   uri = ''
   currentSlot: string | null = null
   quietMode: boolean = false
+  exitOnSuccess: boolean = false
 
   start (): void {
     if (process.platform === 'darwin') {
@@ -64,6 +65,15 @@ export class App {
       tray.getBounds()
     } catch (e) {
       tray = Alert.create({})
+    }
+
+    if (process.argv.includes('--quiet-mode')) {
+      this.quietMode = true
+      preferences.setString('QuietMode', this.quietMode ? '1' : '0')
+    }
+
+    if (process.argv.includes('--exit-on-success')) {
+      this.exitOnSuccess = true
     }
 
     const uri = process.argv.pop()
@@ -199,15 +209,16 @@ export class App {
         currentLibrary = helper.getLibrary()
         if (this.cardReader.library !== '') {
           if (this.cardReader.lastError === '') {
-            const alert = Alert.create({ message: 'Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, frame: false })
             if (this.quietMode) {
-              alert.setVisible(false)
+              if (this.exitOnSuccess) {
+                gui.MessageLoop.quit()
+              }
+            } else {
+              const alert = Alert.create({ message: 'Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, frame: false })
+              setTimeout(() => {
+                alert.setVisible(false)
+              }, 3000)
             }
-            setTimeout(() => {
-              alert.setVisible(false)
-              // gui.MessageLoop.quit()
-              // gui.MessageLoop.run()
-            }, 3000)
           } else {
             if (this.quietMode) {
               console.error(this.cardReader.lastError)
