@@ -16,16 +16,18 @@ The project is under developement and not yet ready for production.
 
 The first stable release will be 0.1.0 when it features at least:
 
-* custom library selection
-* user preferences
-* error handling
-* reading card content
-* callback to current app
+* ✅ custom library selection
+* ✅ user preferences
+* ✅ error handling
+* ✅ reading card content
+* ✅ callback to current app
 * auto update
+* linux support
+* firefox support (browser extension & native messaging host)
 
 Next releases will feature:
 
-* firefox extension & native messaging host
+* multilingual support
 * digital signature
 * authentication
 
