@@ -37,6 +37,14 @@ export class App {
     const trayIcon = Image.createFromPath(iconPath)
 
     this.quietMode = (preferences.getString('QuietMode') ?? '') === '1'
+    if (process.argv.includes('--quiet-mode')) {
+      this.quietMode = true
+      preferences.setString('QuietMode', this.quietMode ? '1' : '0')
+    }
+
+    if (process.argv.includes('--exit-on-success')) {
+      this.exitOnSuccess = true
+    }
 
     if (process.platform === 'darwin') {
       trayIcon.setTemplate(true)
@@ -48,6 +56,20 @@ export class App {
     }
 
     let currentLibrary = helper.getLibrary()
+    if (process.argv.includes('--library')) {
+      const library = process.argv.slice(process.argv.indexOf('--library') + 1).shift()
+      if (undefined !== library) {
+        this.cardReader.init(library)
+        if (this.cardReader.lastError === '') {
+          currentLibrary = library
+          preferences.setString('Library', library)
+        } else {
+          currentLibrary = null
+          console.log(this.cardReader.lastError)
+        }
+      }
+    }
+
     if (currentLibrary !== null) {
       preferences.setString('Library', currentLibrary)
       console.log(`Using library ${currentLibrary}`)
@@ -65,15 +87,6 @@ export class App {
       tray.getBounds()
     } catch (e) {
       tray = Alert.create({})
-    }
-
-    if (process.argv.includes('--quiet-mode')) {
-      this.quietMode = true
-      preferences.setString('QuietMode', this.quietMode ? '1' : '0')
-    }
-
-    if (process.argv.includes('--exit-on-success')) {
-      this.exitOnSuccess = true
     }
 
     const uri = process.argv.pop()
@@ -119,6 +132,7 @@ export class App {
       setTimeout(() => {
         const trayMenuItems: gui.MenuItem[] = []
 
+        let trayLibraryChecked = false
         const trayLibItems: gui.MenuItem[] = []
         const trayLibrary = gui.MenuItem.create('submenu')
         trayLibrary.setLabel('Library')
@@ -126,6 +140,9 @@ export class App {
           const menuItem = gui.MenuItem.create('radio')
           menuItem.setLabel(library)
           const checked = currentLibrary !== null ? library === currentLibrary : index === 0
+          if (checked) {
+            trayLibraryChecked = true
+          }
           menuItem.setChecked(checked)
           menuItem.onClick = (self: gui.MenuItem) => {
             const library = self.getLabel().split(' | ').shift()
@@ -140,6 +157,38 @@ export class App {
           }
           trayLibItems.push(menuItem)
         })
+        const otherLibrary = gui.MenuItem.create('radio')
+        let otherSuffix = ''
+        if (!trayLibraryChecked && currentLibrary !== null) {
+          otherSuffix = currentLibrary
+          this.cardReader.init(currentLibrary)
+          if (this.cardReader.lastError === '') {
+            otherSuffix += ' | ' + this.cardReader.libraryDescription
+            otherLibrary.setChecked(true)
+          }
+        }
+        otherLibrary.setLabel(`Other... ${otherSuffix}`)
+        otherLibrary.onClick = (self: gui.MenuItem) => {
+          const fileDialog = gui.FileOpenDialog.create()
+          if (fileDialog.run()) {
+            const library = fileDialog.getResults().shift()
+            if (undefined !== library) {
+              this.cardReader.init(library)
+              if (this.cardReader.lastError === '') {
+                preferences.setString('Library', library)
+                currentLibrary = library
+                self.setChecked(true)
+                self.setLabel('Other... ' + library + ' | ' + this.cardReader.libraryDescription)
+                console.log(`Using library ${currentLibrary}`)
+                for (let i = 0; i < trayLibMenu.itemCount(); i++) {
+                  const menuItem = trayLibMenu.itemAt(i)
+                  menuItem.setChecked(false)
+                }
+              }
+            }
+          }
+        }
+        trayLibItems.push(otherLibrary)
         const trayLibMenu = gui.Menu.create(trayLibItems)
         trayLibrary.setSubmenu(trayLibMenu)
         trayMenuItems.push(trayLibrary)
@@ -174,8 +223,8 @@ export class App {
         const trayQuietMode = gui.MenuItem.create('checkbox')
         trayQuietMode.setLabel('Silent mode')
         trayQuietMode.setChecked(this.quietMode)
-        trayQuietMode.onClick = (item: gui.MenuItem) => {
-          this.quietMode = item.isChecked()
+        trayQuietMode.onClick = (self: gui.MenuItem) => {
+          this.quietMode = self.isChecked()
           preferences.setString('QuietMode', this.quietMode ? '1' : '0')
         }
         trayMenuItems.push(trayQuietMode)
@@ -205,11 +254,13 @@ export class App {
 
         for (let i = 0; i < trayLibMenu.itemCount(); i++) {
           const menuItem = trayLibMenu.itemAt(i)
-          this.cardReader.init(menuItem.getLabel())
-          if (this.cardReader.lastError !== '') {
-            menuItem.setEnabled(false)
+          if (menuItem.getLabel().indexOf('Other... ') !== 0) {
+            this.cardReader.init(menuItem.getLabel())
+            if (this.cardReader.lastError !== '') {
+              menuItem.setEnabled(false)
+            }
+            menuItem.setLabel(this.cardReader.library + ' | ' + this.cardReader.libraryDescription)
           }
-          menuItem.setLabel(this.cardReader.library + ' | ' + this.cardReader.libraryDescription)
         }
 
         currentLibrary = helper.getLibrary()
