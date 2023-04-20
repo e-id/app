@@ -1,5 +1,17 @@
 # Using
 
+## Platform and browser support
+
+| Browser | MacOS | Windows | Linux |
+|---------|-------|---------|-------|
+| Chrome  | ✅    | ✅      | [^1]  |
+| Edge    | ✅    | ✅      | [^1]  |
+| Safari  | ✅    |         |       |
+| Firefox | [^1]  | [^1]    | [^1]  |
+| IE      |       | ?       |       |
+
+[^1]: Coming soon
+
 ## For end users
 
 The app can be installed by downloading the release from the [releases](https://github.com/e-id/e-id/releases) page.
