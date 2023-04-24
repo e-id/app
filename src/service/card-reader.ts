@@ -92,7 +92,7 @@ export class CardReader {
       try {
         this.pkcs11.C_Finalize()
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
     }
   }

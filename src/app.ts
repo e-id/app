@@ -20,9 +20,12 @@ export class App {
   uri = ''
   currentSlot: string | null = null
   quietMode: boolean = false
+  nativeMessaging: boolean = false
   exitOnSuccess: boolean = false
 
-  start (): void {
+  start (url: string | null = null): void {
+    this.nativeMessaging = url !== null
+
     if (process.platform === 'darwin') {
       this.caller = String(process.env.OPEN_EID_APP ?? '')
     }
@@ -36,13 +39,13 @@ export class App {
     const iconPath = path.join(__dirname, '../assets/tray' + (process.platform === 'darwin' ? '-mac' : '') + '.png')
     const trayIcon = Image.createFromPath(iconPath)
 
-    this.quietMode = (preferences.getString('QuietMode') ?? '') === '1'
+    this.quietMode = (preferences.getString('QuietMode') ?? '') === '1' || this.nativeMessaging
     if (process.argv.includes('--quiet-mode')) {
       this.quietMode = true
       preferences.setString('QuietMode', this.quietMode ? '1' : '0')
     }
 
-    if (process.argv.includes('--exit-on-success')) {
+    if (process.argv.includes('--exit-on-success') || this.nativeMessaging) {
       this.exitOnSuccess = true
     }
 
@@ -51,8 +54,12 @@ export class App {
       gui.app.setActivationPolicy('accessory')
     }
 
-    if (process.platform === 'win32') {
+    if (process.platform === 'win32' && !this.nativeMessaging) {
       helper.registerProtocols()
+    }
+
+    if (!this.nativeMessaging) {
+      helper.registerNativeMessagingHost()
     }
 
     let currentLibrary = helper.getLibrary()
@@ -65,19 +72,19 @@ export class App {
           preferences.setString('Library', library)
         } else {
           currentLibrary = null
-          console.log(this.cardReader.lastError)
+          console.error(this.cardReader.lastError)
         }
       }
     }
 
     if (currentLibrary !== null) {
       preferences.setString('Library', currentLibrary)
-      console.log(`Using library ${currentLibrary}`)
+      console.error(`Using library ${currentLibrary}`)
       this.cardReader.init(currentLibrary)
       this.currentSlot = helper.getSlot()
       if (this.currentSlot !== null) {
         preferences.setString('Slot', this.currentSlot)
-        console.log(`Using slot ${this.currentSlot}`)
+        console.error(`Using slot ${this.currentSlot}`)
       }
     }
 
@@ -95,8 +102,12 @@ export class App {
       preferences.setString('QuietMode', this.quietMode ? '1' : '0')
     }
 
-    if (undefined !== uri && (uri.startsWith('e-id://') || uri.startsWith('open-eid://')) && currentLibrary !== null) {
-      this.uri = uri
+    if (undefined !== uri && (uri.startsWith('e-id://') || uri.startsWith('open-eid://'))) {
+      url = uri
+    }
+
+    if ((url?.startsWith('e-id://') === true || url?.startsWith('open-eid://') === true) && currentLibrary !== null) {
+      this.uri = url
       const slot = this.currentSlot !== null ? helper.getSlotByDescription(this.currentSlot) : null
       if (slot === null) {
         const wait = Alert.create({ message: 'Please connect reader and insert card' })
@@ -108,14 +119,14 @@ export class App {
             this.currentSlot = slot.slotDescription.trim()
             if (this.currentSlot !== null) {
               preferences.setString('Slot', this.currentSlot)
-              console.log(`Using Slot ${this.currentSlot}`)
+              console.error(`Using Slot ${this.currentSlot}`)
             }
             this.read(slot.buffer)
             process.exit(0)
           }
         }, 1000)
         wait.onClose = () => {
-          new Callback(this.caller, this.uri).result({ cancel: true })
+          this.nativeMessaging ? Callback.native({ cancel: true }) : new Callback(this.caller, this.uri).result({ cancel: true })
           clearInterval(interval)
           process.exit(0)
         }
@@ -129,172 +140,170 @@ export class App {
         loading.setVisible(false)
       }
 
-      setTimeout(() => {
-        const trayMenuItems: gui.MenuItem[] = []
+      const trayMenuItems: gui.MenuItem[] = []
 
-        let trayLibraryChecked = false
-        const trayLibItems: gui.MenuItem[] = []
-        const trayLibrary = gui.MenuItem.create('submenu')
-        trayLibrary.setLabel('Library')
-        cardLibrary.findAll().forEach((library: string, index: number) => {
-          const menuItem = gui.MenuItem.create('radio')
-          menuItem.setLabel(library)
-          const checked = currentLibrary !== null ? library === currentLibrary : index === 0
-          if (checked) {
-            trayLibraryChecked = true
+      let trayLibraryChecked = false
+      const trayLibItems: gui.MenuItem[] = []
+      const trayLibrary = gui.MenuItem.create('submenu')
+      trayLibrary.setLabel('Library')
+      cardLibrary.findAll().forEach((library: string, index: number) => {
+        const menuItem = gui.MenuItem.create('radio')
+        menuItem.setLabel(library)
+        const checked = currentLibrary !== null ? library === currentLibrary : index === 0
+        if (checked) {
+          trayLibraryChecked = true
+        }
+        menuItem.setChecked(checked)
+        menuItem.onClick = (self: gui.MenuItem) => {
+          const library = self.getLabel().split(' | ').shift()
+          if (undefined !== library) {
+            this.cardReader.init(library)
+            if (this.cardReader.lastError === '') {
+              preferences.setString('Library', library)
+              currentLibrary = library
+              console.error(`Using library ${currentLibrary}`)
+            }
           }
-          menuItem.setChecked(checked)
-          menuItem.onClick = (self: gui.MenuItem) => {
-            const library = self.getLabel().split(' | ').shift()
-            if (undefined !== library) {
-              this.cardReader.init(library)
-              if (this.cardReader.lastError === '') {
-                preferences.setString('Library', library)
-                currentLibrary = library
-                console.log(`Using library ${currentLibrary}`)
+        }
+        trayLibItems.push(menuItem)
+      })
+      const otherLibrary = gui.MenuItem.create('radio')
+      let otherSuffix = ''
+      if (!trayLibraryChecked && currentLibrary !== null) {
+        otherSuffix = currentLibrary
+        this.cardReader.init(currentLibrary)
+        if (this.cardReader.lastError === '') {
+          otherSuffix += ' | ' + this.cardReader.libraryDescription
+          otherLibrary.setChecked(true)
+        }
+      }
+      otherLibrary.setLabel(`Other... ${otherSuffix}`)
+      otherLibrary.onClick = (self: gui.MenuItem) => {
+        const fileDialog = gui.FileOpenDialog.create()
+        if (fileDialog.run()) {
+          const library = fileDialog.getResults().shift()
+          if (undefined !== library) {
+            this.cardReader.init(library)
+            if (this.cardReader.lastError === '') {
+              preferences.setString('Library', library)
+              currentLibrary = library
+              self.setChecked(true)
+              self.setLabel('Other... ' + library + ' | ' + this.cardReader.libraryDescription)
+              console.error(`Using library ${currentLibrary}`)
+              for (let i = 0; i < trayLibMenu.itemCount(); i++) {
+                const menuItem = trayLibMenu.itemAt(i)
+                menuItem.setChecked(false)
               }
             }
           }
-          trayLibItems.push(menuItem)
-        })
-        const otherLibrary = gui.MenuItem.create('radio')
-        let otherSuffix = ''
-        if (!trayLibraryChecked && currentLibrary !== null) {
-          otherSuffix = currentLibrary
-          this.cardReader.init(currentLibrary)
-          if (this.cardReader.lastError === '') {
-            otherSuffix += ' | ' + this.cardReader.libraryDescription
-            otherLibrary.setChecked(true)
+        }
+      }
+      trayLibItems.push(otherLibrary)
+      const trayLibMenu = gui.Menu.create(trayLibItems)
+      trayLibrary.setSubmenu(trayLibMenu)
+      trayMenuItems.push(trayLibrary)
+
+      const traySlotItems: gui.MenuItem[] = []
+      const traySlot = gui.MenuItem.create('submenu')
+      traySlot.setLabel('Reader')
+      this.cardReader.getSlots().forEach((slot: any, index: number) => {
+        const menuItem = gui.MenuItem.create('radio')
+        menuItem.setLabel(slot.slotDescription.trim())
+        const checked = this.currentSlot !== null ? menuItem.getLabel() === this.currentSlot : index === 0
+        menuItem.setChecked(checked)
+        menuItem.onClick = (self: gui.MenuItem) => {
+          preferences.setString('Slot', self.getLabel())
+          this.currentSlot = self.getLabel()
+          console.error(`Using slot ${this.currentSlot}`)
+        }
+        traySlotItems.push(menuItem)
+      })
+      if (traySlotItems.length === 0) {
+        const menuItem = gui.MenuItem.create('label')
+        menuItem.setLabel('Please connect reader and insert card')
+        menuItem.setEnabled(false)
+        traySlotItems.push(menuItem)
+      }
+      const traySlotMenu = gui.Menu.create(traySlotItems)
+      traySlot.setSubmenu(traySlotMenu)
+      trayMenuItems.push(traySlot)
+
+      trayMenuItems.push(gui.MenuItem.create('separator'))
+
+      const trayQuietMode = gui.MenuItem.create('checkbox')
+      trayQuietMode.setLabel('Silent mode')
+      trayQuietMode.setChecked(this.quietMode)
+      trayQuietMode.onClick = (self: gui.MenuItem) => {
+        this.quietMode = self.isChecked()
+        preferences.setString('QuietMode', this.quietMode ? '1' : '0')
+      }
+      trayMenuItems.push(trayQuietMode)
+
+      const trayQuit = gui.MenuItem.create('label')
+      trayQuit.setLabel('Quit')
+      trayQuit.onClick = () => { gui.MessageLoop.quit() }
+      trayMenuItems.push(trayQuit)
+
+      if (tray instanceof gui.Tray) {
+        tray.setMenu(gui.Menu.create(trayMenuItems))
+      }
+
+      if (tray instanceof gui.Window) {
+        if (process.platform === 'darwin') {
+          const menu = gui.Menu.create(trayMenuItems)
+          const button = gui.Button.create({ title: 'Menu' })
+          button.onClick = () => { menu.popup() }
+          const container = tray.getContentView() as gui.Container
+          container.addChildView(button)
+        } else {
+          tray.setMenuBar(gui.MenuBar.create(trayMenuItems))
+        }
+      }
+
+      loading.setVisible(false)
+
+      for (let i = 0; i < trayLibMenu.itemCount(); i++) {
+        const menuItem = trayLibMenu.itemAt(i)
+        if (menuItem.getLabel().indexOf('Other... ') !== 0) {
+          this.cardReader.init(menuItem.getLabel())
+          if (this.cardReader.lastError !== '') {
+            menuItem.setEnabled(false)
           }
+          menuItem.setLabel(this.cardReader.library + ' | ' + this.cardReader.libraryDescription)
         }
-        otherLibrary.setLabel(`Other... ${otherSuffix}`)
-        otherLibrary.onClick = (self: gui.MenuItem) => {
-          const fileDialog = gui.FileOpenDialog.create()
-          if (fileDialog.run()) {
-            const library = fileDialog.getResults().shift()
-            if (undefined !== library) {
-              this.cardReader.init(library)
-              if (this.cardReader.lastError === '') {
-                preferences.setString('Library', library)
-                currentLibrary = library
-                self.setChecked(true)
-                self.setLabel('Other... ' + library + ' | ' + this.cardReader.libraryDescription)
-                console.log(`Using library ${currentLibrary}`)
-                for (let i = 0; i < trayLibMenu.itemCount(); i++) {
-                  const menuItem = trayLibMenu.itemAt(i)
-                  menuItem.setChecked(false)
-                }
-              }
-            }
-          }
-        }
-        trayLibItems.push(otherLibrary)
-        const trayLibMenu = gui.Menu.create(trayLibItems)
-        trayLibrary.setSubmenu(trayLibMenu)
-        trayMenuItems.push(trayLibrary)
+      }
 
-        const traySlotItems: gui.MenuItem[] = []
-        const traySlot = gui.MenuItem.create('submenu')
-        traySlot.setLabel('Reader')
-        this.cardReader.getSlots().forEach((slot: any, index: number) => {
-          const menuItem = gui.MenuItem.create('radio')
-          menuItem.setLabel(slot.slotDescription.trim())
-          const checked = this.currentSlot !== null ? menuItem.getLabel() === this.currentSlot : index === 0
-          menuItem.setChecked(checked)
-          menuItem.onClick = (self: gui.MenuItem) => {
-            preferences.setString('Slot', self.getLabel())
-            this.currentSlot = self.getLabel()
-            console.log(`Using slot ${this.currentSlot}`)
-          }
-          traySlotItems.push(menuItem)
-        })
-        if (traySlotItems.length === 0) {
-          const menuItem = gui.MenuItem.create('label')
-          menuItem.setLabel('Please connect reader and insert card')
-          menuItem.setEnabled(false)
-          traySlotItems.push(menuItem)
-        }
-        const traySlotMenu = gui.Menu.create(traySlotItems)
-        traySlot.setSubmenu(traySlotMenu)
-        trayMenuItems.push(traySlot)
-
-        trayMenuItems.push(gui.MenuItem.create('separator'))
-
-        const trayQuietMode = gui.MenuItem.create('checkbox')
-        trayQuietMode.setLabel('Silent mode')
-        trayQuietMode.setChecked(this.quietMode)
-        trayQuietMode.onClick = (self: gui.MenuItem) => {
-          this.quietMode = self.isChecked()
-          preferences.setString('QuietMode', this.quietMode ? '1' : '0')
-        }
-        trayMenuItems.push(trayQuietMode)
-
-        const trayQuit = gui.MenuItem.create('label')
-        trayQuit.setLabel('Quit')
-        trayQuit.onClick = () => { gui.MessageLoop.quit() }
-        trayMenuItems.push(trayQuit)
-
-        if (tray instanceof gui.Tray) {
-          tray.setMenu(gui.Menu.create(trayMenuItems))
-        }
-
-        if (tray instanceof gui.Window) {
-          if (process.platform === 'darwin') {
-            const menu = gui.Menu.create(trayMenuItems)
-            const button = gui.Button.create({ title: 'Menu' })
-            button.onClick = () => { menu.popup() }
-            const container = tray.getContentView() as gui.Container
-            container.addChildView(button)
-          } else {
-            tray.setMenuBar(gui.MenuBar.create(trayMenuItems))
-          }
-        }
-
-        loading.setVisible(false)
-
-        for (let i = 0; i < trayLibMenu.itemCount(); i++) {
-          const menuItem = trayLibMenu.itemAt(i)
-          if (menuItem.getLabel().indexOf('Other... ') !== 0) {
-            this.cardReader.init(menuItem.getLabel())
-            if (this.cardReader.lastError !== '') {
-              menuItem.setEnabled(false)
-            }
-            menuItem.setLabel(this.cardReader.library + ' | ' + this.cardReader.libraryDescription)
-          }
-        }
-
-        currentLibrary = helper.getLibrary()
-        if (this.cardReader.library !== '') {
-          if (this.cardReader.lastError === '') {
-            if (this.quietMode) {
-              if (this.exitOnSuccess) {
-                gui.MessageLoop.quit()
-              }
-            } else {
-              const alert = Alert.create({ message: 'Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, frame: false })
-              setTimeout(() => {
-                alert.setVisible(false)
-              }, 3000)
-            }
-          } else {
-            if (this.quietMode) {
-              console.error(this.cardReader.lastError)
+      currentLibrary = helper.getLibrary()
+      if (this.cardReader.library !== '') {
+        if (this.cardReader.lastError === '') {
+          if (this.quietMode) {
+            if (this.exitOnSuccess) {
               gui.MessageLoop.quit()
-            } else {
-              const error = Alert.create({ message: 'An error occured:\n\n' + this.cardReader.lastError, width: 600, height: 200 })
-              error.onClose = () => { gui.MessageLoop.quit() }
             }
+          } else {
+            const alert = Alert.create({ message: 'Open e-ID is up and ready !\n\nUsing library ' + this.cardReader.library, frame: false })
+            setTimeout(() => {
+              alert.setVisible(false)
+            }, 3000)
           }
         } else {
           if (this.quietMode) {
-            console.error('No library found. Please install middleware and try again.')
+            console.error(this.cardReader.lastError)
             gui.MessageLoop.quit()
           } else {
-            const error = Alert.create({ message: 'No library found.\nPlease install middleware and try again.' })
+            const error = Alert.create({ message: 'An error occured:\n\n' + this.cardReader.lastError, width: 600, height: 200 })
             error.onClose = () => { gui.MessageLoop.quit() }
           }
         }
-      }, 1000)
+      } else {
+        if (this.quietMode) {
+          console.error('No library found. Please install middleware and try again.')
+          gui.MessageLoop.quit()
+        } else {
+          const error = Alert.create({ message: 'No library found.\nPlease install middleware and try again.' })
+          error.onClose = () => { gui.MessageLoop.quit() }
+        }
+      }
     }
 
     gui.MessageLoop.run()
@@ -320,7 +329,7 @@ export class App {
         allData = this.cardReader.readCard(buffer)
       } catch (e) {
         if (always) {
-          new Callback(this.caller, this.uri).result({ error: e.message })
+          this.nativeMessaging ? Callback.native({ error: e.message }) : new Callback(this.caller, this.uri).result({ error: e.message })
         } else {
           const error = Alert.create({ message: 'An error occured:\n\n' + String(e.message), width: 600, height: 200 })
           error.onClose = () => { gui.MessageLoop.quit() }
@@ -340,10 +349,10 @@ export class App {
           }
         }
       })
-      new Callback(this.caller, this.uri).result(data)
+      this.nativeMessaging ? Callback.native(data) : new Callback(this.caller, this.uri).result(data)
     } else {
       if (always) {
-        new Callback(this.caller, this.uri).result({ cancel: true })
+        this.nativeMessaging ? Callback.native({ cancel: true }) : new Callback(this.caller, this.uri).result({ cancel: true })
       }
     }
   }
