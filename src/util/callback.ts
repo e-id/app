@@ -59,4 +59,12 @@ export class Callback {
       execSync(cmd, { windowsHide: true })
     }
   }
+
+  public static native (data: object): void {
+    const json = JSON.stringify(data, null, '   ')
+    const buffer = Buffer.alloc(4)
+    buffer.writeUInt32LE(Buffer.from(json).length, 0)
+    process.stdout.write(buffer)
+    process.stdout.write(json)
+  }
 }

@@ -1,3 +1,6 @@
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 import * as reg from 'native-reg'
 
 import { CardLibrary } from '../service/card-library'
@@ -92,6 +95,44 @@ export class Helper {
       return slots.shift()
     } else {
       return null
+    }
+  }
+
+  registerNativeMessagingHost (): void {
+    const manifest: {
+      name: string
+      description: string
+      path: string
+      type: string
+      allowed_extensions: string[]
+      allowed_origins?: string[]
+    } = {
+      name: 'io.github.eid',
+      description: 'Open e-ID',
+      path: process.argv0,
+      type: 'stdio',
+      allowed_extensions: [
+        'extension@e-id.github.io'
+      ]
+    }
+    try {
+      manifest.path = fs.realpathSync(manifest.path)
+    } catch (e) {
+      console.error(e)
+    }
+    if (process.platform === 'darwin') {
+      if (fs.existsSync(path.join(os.homedir(), 'Library', 'Application Support', 'Mozilla', 'NativeMessagingHosts'))) {
+        fs.writeFileSync(path.join(os.homedir(), 'Library', 'Application Support', 'Mozilla', 'NativeMessagingHosts', manifest.name + '.json'), JSON.stringify(manifest, null, '  '))
+      }
+      manifest.allowed_origins = [
+        'chrome-extension://kfcijgfmmedgkgnhamedgecihkjjjgfj/'
+      ]
+      if (fs.existsSync(path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome', 'NativeMessagingHosts'))) {
+        fs.writeFileSync(path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome', 'NativeMessagingHosts', manifest.name + '.json'), JSON.stringify(manifest, null, '  '))
+      }
+      if (fs.existsSync(path.join(os.homedir(), 'Library', 'Application Support', 'Microsoft Edge', 'NativeMessagingHosts'))) {
+        fs.writeFileSync(path.join(os.homedir(), 'Library', 'Application Support', 'Microsoft Edge', 'NativeMessagingHosts', manifest.name + '.json'), JSON.stringify(manifest, null, '  '))
+      }
     }
   }
 }

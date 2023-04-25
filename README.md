@@ -21,9 +21,9 @@ The first stable release will be 0.1.0 when it features at least:
 * ✅ error handling
 * ✅ reading card content
 * ✅ callback to current app
+* ✅ firefox support (browser extension & native messaging host)
 * auto update
 * linux support
-* firefox support (browser extension & native messaging host)
 
 Next releases will feature:
 
