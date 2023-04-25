@@ -29,6 +29,9 @@ export class Callback {
       if (caller.includes('/Google Chrome.app/') || caller.includes('/Microsoft Edge.app/')) {
         cmd = `open --new "${caller}" --args --${appMode ? 'app=' : 'new-window '}"${callback}${urlData}"`
       }
+      if (caller.includes('/Firefox.app/')) {
+        cmd = `open --new -a "${caller}" --args -new-window "${callback}${urlData}"`
+      }
       exec(cmd)
     }
     if (process.platform === 'win32') {
