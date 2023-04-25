@@ -4,13 +4,14 @@
 
 | Browser | MacOS | Windows | Linux |
 |---------|-------|---------|-------|
-| Chrome  | ✅    | ✅      | [^1]  |
-| Edge    | ✅    | ✅      | [^1]  |
+| Chrome  | ✅    | ✅      | [^2]  |
+| Edge    | ✅    | ✅      | [^2]  |
 | Safari  | ✅    |         |       |
-| Firefox | [^1]  | [^1]    | [^1]  |
+| Firefox | ✅[^1]| [^2]    | [^2]  |
 | IE      |       | ?       |       |
 
-[^1]: Coming soon
+[^1]: extension required on older Firefox versions
+[^2]: coming soon
 
 ## For end users
 
